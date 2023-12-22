@@ -4,4 +4,4 @@ services:
     image: gubee33/supertictactoe
     build: .
     ports:
-      - 3000:8080
+      - 3000:80
