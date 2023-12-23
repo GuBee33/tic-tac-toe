@@ -102,7 +102,6 @@ const putASign = (x: number, y: number, i: number, j: number): void => {
     const [row, col, diag] = checkGameStatus(config.value.ThreeTimesThree);
 
     config.value.hasWonAll = row.won || col.won || diag.won ? (config.value.isXTurn ? 'O' : 'X') : (config.value.ThreeTimesThree.map((row, i) => row.some(c => c === "") ? row.map((c, j) => c === "" ? config.value.BigThreeTimesThree[i][j] : -1) : -1).flat().filter(x => x != -1).flat().flat().some(val => val === '') ? '' : 'draw');
-    console.log(JSON.stringify(config.value))
   }
 };
 
@@ -194,24 +193,7 @@ function checkWin(matrix: ThreeTimesThreeMatrix, x: number, y: number): boolean 
   setBackground(config.value.ThreeTimesThree, config.value.winnerBackground, color)
 
   if (row.won || col.won || diag.won) {
-    // config.value.background[x][y][row.index] = Array(3).fill(color);
     return true;
-    // } else if (col.won) {
-    // for (let i = 0; i < matrix.length; i++) {
-    //   config.value.background[x][y][i][col.index] = color;
-    // }
-    //   return true;
-    // } else if (diag.won) {
-    // if (diag.index === 0) {
-    //   for (let i = 0; i < matrix.length; i++) {
-    //     config.value.background[x][y][i][i] = color;
-    //   }
-    // } else {
-    //   for (let i = 0; i < matrix.length; i++) {
-    //     config.value.background[x][y][i][matrix.length - 1 - i] = color;
-    //   }
-    // }
-    // return true;
   } else {
     return false;
   }
@@ -226,7 +208,7 @@ function checkGameStatus(matrix: ThreeTimesThreeMatrix): [WinData, WinData, WinD
 </script>
 
 <template>
-  <h2 v-if="config.hasWonAll == 'X' || config.hasWonAll == 'O'">{{ config.hasWonAll }} won the game
+  <h2 v-if="config.hasWonAll == 'X' || config.hasWonAll == 'O'">"{{ config.hasWonAll }}" won the game
   </h2>
   <h2 v-else-if="config.hasWonAll == 'draw'">
     It's a draw
@@ -253,8 +235,7 @@ function checkGameStatus(matrix: ThreeTimesThreeMatrix): [WinData, WinData, WinD
 <style scoped>
 .bigtable {
   width: min(90vw, 90vh);
-  height: min(90vw, 90vh);
-  border-collapse: collapse;
+  height: min(81vw, 81vh);
   table-layout: fixed;
 }
 
@@ -264,25 +245,25 @@ function checkGameStatus(matrix: ThreeTimesThreeMatrix): [WinData, WinData, WinD
 }
 
 .available {
-  width: calc(min(90vw, 90vh)/3);
-  height: calc(min(90vw, 90vh)/3);
+  width: min(27vw, 27vh);
+  height: min(30vw, 30vh);
   border: solid;
   border-color: aquamarine;
 }
 
 .blocked {
-  width: calc(min(90vw, 90vh)/3);
-  height: calc(min(90vw, 90vh)/3);
+  width: min(27vw, 27vh);
+  height: min(30vw, 30vh);
   background-color: gray;
 }
 
 .mark {
-  width: calc(min(90vw, 90vh)/11);
-  height: calc(min(90vw, 90vh)/11);
+  width: min(8vw, 8vh);
+  height: min(8vw, 8vh);
   color: azure;
   align-content: center;
   vertical-align: middle;
-  font-size: calc(min(90vw, 90vh)/15);
+  font-size: min(6vw, 6vh);
 }
 
 .black {

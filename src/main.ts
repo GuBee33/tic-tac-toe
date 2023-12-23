@@ -1,5 +1,9 @@
 import { createApp } from 'vue'
-import './style.css'
-import App from './App.vue'
+import App from "./App.vue";
 
-createApp(App).mount('#app')
+import 'primevue/resources/themes/bootstrap4-dark-blue/theme.css'
+import PrimeVue from 'primevue/config';
+
+const app = createApp(App);
+app.use(PrimeVue);
+app.mount("#app");
