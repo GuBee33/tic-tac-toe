@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, Ref } from 'vue'
 import Button from 'primevue/button';
+import Checkbox from 'primevue/checkbox';
+
 
 type CellValue = 'X' | 'O' | '';
 type ThreeTimesThreeMatrix = CellValue[][];
@@ -19,6 +21,7 @@ interface TheConfig {
   lastClick: number[],
   winnerBackground: string[][]
 }
+const isTwoplayer: Ref<boolean> = ref((true))
 const config: Ref<TheConfig> = ref({
   isXTurn: true,
   hasWon: [[false, false, false], [false, false, false], [false, false, false]],
@@ -105,7 +108,7 @@ const putASign = (x: number, y: number, i: number, j: number): void => {
   }
 };
 
-function markValidArea(x: number, y: number) {
+const markValidArea = (x: number, y: number) => {
   if (config.value.hasWonAll) {
     return 'gray'
   }
@@ -121,7 +124,7 @@ function markValidArea(x: number, y: number) {
     }
   }
 }
-function checkRows(matrix: ThreeTimesThreeMatrix): WinData {
+const checkRows = (matrix: ThreeTimesThreeMatrix): WinData => {
   for (let i = 0; i < matrix.length; i++) {
     const row = matrix[i];
     if (row[0] !== '' && row.every(val => val === row[0])) {
@@ -131,7 +134,7 @@ function checkRows(matrix: ThreeTimesThreeMatrix): WinData {
   return { won: false, index: -1 };
 }
 
-function checkColumns(matrix: ThreeTimesThreeMatrix): WinData {
+const checkColumns = (matrix: ThreeTimesThreeMatrix): WinData => {
   for (let i = 0; i < matrix.length; i++) {
     if (matrix[0][i] !== "") {
       let columnSame = true;
@@ -149,7 +152,7 @@ function checkColumns(matrix: ThreeTimesThreeMatrix): WinData {
   return { won: false, index: -1 };
 }
 
-function checkDiagonals(matrix: ThreeTimesThreeMatrix): WinData {
+const checkDiagonals = (matrix: ThreeTimesThreeMatrix): WinData => {
   const topLeftBottomRight = matrix[0][0] !== "" && matrix[0][0] === matrix[1][1] && matrix[1][1] === matrix[2][2];
   const topRightBottomLeft = matrix[0][2] !== "" && matrix[0][2] === matrix[1][1] && matrix[1][1] === matrix[2][0];
 
@@ -164,7 +167,7 @@ function checkDiagonals(matrix: ThreeTimesThreeMatrix): WinData {
   }
 }
 
-function setBackground(matrix: ThreeTimesThreeMatrix, colorMatrix: string[][], color: string) {
+const setBackground = (matrix: ThreeTimesThreeMatrix, colorMatrix: string[][], color: string) => {
   const [row, col, diag] = checkGameStatus(matrix);
   if (row.won) {
     colorMatrix[row.index] = Array(3).fill(color);
@@ -185,7 +188,7 @@ function setBackground(matrix: ThreeTimesThreeMatrix, colorMatrix: string[][], c
   }
 }
 
-function checkWin(matrix: ThreeTimesThreeMatrix, x: number, y: number): boolean {
+const checkWin = (matrix: ThreeTimesThreeMatrix, x: number, y: number): boolean => {
   const [row, col, diag] = checkGameStatus(matrix);
   config.value.ThreeTimesThree[x][y] = row.won || col.won || diag.won ? (config.value.isXTurn ? 'O' : 'X') : '';
   const color = config.value.ThreeTimesThree[x][y] === 'O' ? 'green' : 'red';
@@ -199,7 +202,7 @@ function checkWin(matrix: ThreeTimesThreeMatrix, x: number, y: number): boolean 
   }
 }
 
-function checkGameStatus(matrix: ThreeTimesThreeMatrix): [WinData, WinData, WinData] {
+const checkGameStatus = (matrix: ThreeTimesThreeMatrix): [WinData, WinData, WinData] => {
   const row = checkRows(matrix);
   const col = checkColumns(matrix);
   const diag = checkDiagonals(matrix);
@@ -208,6 +211,8 @@ function checkGameStatus(matrix: ThreeTimesThreeMatrix): [WinData, WinData, WinD
 </script>
 
 <template>
+  <label for="is2player" class="ml-2"> 2 player mode </label>
+  <Checkbox v-model="isTwoplayer" input-id="is2player" :binary="true" />
   <h2 v-if="config.hasWonAll == 'X' || config.hasWonAll == 'O'">"{{ config.hasWonAll }}" won the game
   </h2>
   <h2 v-else-if="config.hasWonAll == 'draw'">
@@ -234,8 +239,8 @@ function checkGameStatus(matrix: ThreeTimesThreeMatrix): [WinData, WinData, WinD
 
 <style scoped>
 .bigtable {
-  width: min(90vw, 90vh);
-  height: min(81vw, 81vh);
+  width: min(82vw, 82vh);
+  height: min(82vw, 82vh);
   table-layout: fixed;
 }
 
@@ -245,25 +250,25 @@ function checkGameStatus(matrix: ThreeTimesThreeMatrix): [WinData, WinData, WinD
 }
 
 .available {
-  width: min(27vw, 27vh);
-  height: min(30vw, 30vh);
+  width: min(24vw, 24vh);
+  height: min(24vw, 24vh);
   border: solid;
   border-color: aquamarine;
 }
 
 .blocked {
-  width: min(27vw, 27vh);
-  height: min(30vw, 30vh);
+  width: min(24vw, 24vh);
+  height: min(24vw, 24vh);
   background-color: gray;
 }
 
 .mark {
-  width: min(8vw, 8vh);
-  height: min(8vw, 8vh);
+  width: min(7vw, 7vh);
+  height: min(7vw, 7vh);
   color: azure;
   align-content: center;
   vertical-align: middle;
-  font-size: min(6vw, 6vh);
+  font-size: min(7vw, 7vh);
 }
 
 .black {
