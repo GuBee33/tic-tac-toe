@@ -30,6 +30,9 @@ const config: Ref<TheConfig> = ref({
 const reset = () => {
     config.value.isXTurn = true
     config.value.hasWonAll = ""
+    config.value.availableCells = []
+    config.value.ThreeTimesThree = []
+    config.value.background = []
     for (let i = 0; i < 3; i++) {
         let empty: CellValue[] = []
         let bg = []
@@ -117,7 +120,7 @@ const getBestMove = (board: ThreeTimesThreeMatrix, AIPLAYER: CellValue): number[
     let bestMove = [-1, -1];
     let bestScore = -Infinity;
 
-    const availableMoves = board.flatMap((row, i) => row.map((cell, j) => ({ cell, indexes: [i, j] }))).filter(({ cell }) => cell === "").map(({ indexes }) => indexes);
+    const availableMoves = getAvailableMoves(board)
     if (availableMoves.some(x => x[0] == 1 && x[1] == 1)) {
         return [1, 1]
     }

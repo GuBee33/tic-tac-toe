@@ -115,23 +115,58 @@ const putASign = (x: number, y: number, i: number, j: number): void => {
   if (canPlaceSign) {
     updateConfig(x, y, i, j)
     if (!isTwoplayer.value) {
-      const [x2, y2, i2, j2] = getBestMove(i, j)
+      const AIPLAYER = config.value.isXTurn ? 'O' : 'X'
+      const [x2, y2, i2, j2] = getBestMove(i, j, AIPLAYER)
       updateConfig(x2, y2, i2, j2)
     }
   }
 };
 
-const returnRandomFromArray = (matrix: any[]) => {
-  return matrix[Math.round(Math.random() * matrix.length)]
-}
 
-const getBestMove = (i: number, j: number): number[] => {
-  const availableCellsInTargetMatrix = config.value.availableCells.filter(cell => (cell[0] === i && cell[1] === j))
-  if (availableCellsInTargetMatrix.length > 0) {
-    return returnRandomFromArray(availableCellsInTargetMatrix)
+const getBestMove3x3 = (availableMoves: number[][], i: number, j: number, AIPLAYER: CellValue): { bestMove: number[], bestScore: number } => {
+  let bestMove = [-1, -1, -1, -1];
+  let bestScore = -Infinity;
+  if (availableMoves.some(x => (x[0] == i && x[1] == j && x[2] == 1 && x[3] == 1))) {
+    return { bestMove: [i, j, 1, 1], bestScore: 5 }
   }
   else {
-    return returnRandomFromArray(config.value.availableCells)
+    for (const move of availableMoves) {
+      const newBoard = JSON.parse(JSON.stringify(config.value.BigThreeTimesThree[j][j]));
+      newBoard[move[2]][move[3]] = AIPLAYER;
+      const score = minimax(newBoard, 8, false, AIPLAYER); // Depth set to 8 for Tic-tac-toe
+      if (score > bestScore) {
+        bestScore = score;
+        bestMove = move;
+      }
+    }
+    return { bestMove, bestScore };
+  }
+}
+
+const getBestMove = (i: number, j: number, AIPLAYER: CellValue): number[] => {
+  const availableMoves = config.value.availableCells.filter(cell => (cell[0] === i && cell[1] === j))
+  if (availableMoves.length > 0) {
+    return getBestMove3x3(availableMoves, i, j, AIPLAYER).bestMove
+  }
+  else {
+    const uniquePairs: Set<string> = new Set();
+
+    config.value.availableCells.forEach((innerArray: number[]) => {
+      const pairString = innerArray.slice(0, 2).join(',');
+      uniquePairs.add(pairString);
+    });
+    let verybestMove: number[] = []
+    let verybestScore = -Infinity
+    uniquePairs.forEach(index => {
+      let [x, y] = index.split(',').map(Number)
+      let newavailableMoves = config.value.availableCells.filter(cell => (cell[0] == x && cell[1] == y))
+      const { bestMove, bestScore } = getBestMove3x3(newavailableMoves, x, y, AIPLAYER)
+      if (bestScore > verybestScore) {
+        verybestScore = bestScore
+        verybestMove = bestMove
+      }
+    })
+    return verybestMove
   }
 }
 
@@ -235,6 +270,56 @@ const checkGameStatus = (matrix: ThreeTimesThreeMatrix): [WinData, WinData, WinD
   const diag = checkDiagonals(matrix);
   return [row, col, diag];
 }
+
+const evaluate = (board: ThreeTimesThreeMatrix, availableMoves: number[][], AIPLAYER: CellValue, HUMANPLAYER: CellValue, depth: number): number => {
+
+  const [row, col, diag] = checkGameStatus(board);
+  const winner = row.won ? board[row.index][0] : (col.won ? board[0][col.index] : (diag.won ? board[1][1] : (availableMoves.length === 0 ? "draw" : '')));
+  if (winner == AIPLAYER) {
+    return 10 + depth;
+  } else if (winner == HUMANPLAYER) {
+    return -10 - depth;
+  } else {
+    return 0;
+  }
+}
+
+const getAvailableMoves = (board: ThreeTimesThreeMatrix) => {
+  return board.flatMap((row, i) => row.map((cell, j) => ({ cell, indexes: [i, j] }))).filter(({ cell }) => cell === "").map(({ indexes }) => indexes);
+}
+
+const minimax = (board: ThreeTimesThreeMatrix, depth: number, maximizingPlayer: boolean, AIPLAYER: CellValue): number => {
+  const HUMANPLAYER = AIPLAYER == "X" ? "O" : "X"
+  const availableMoves = getAvailableMoves(board);
+  const score = evaluate(board, availableMoves, AIPLAYER, HUMANPLAYER, depth);
+
+  if (score === 10 || score === -10 || availableMoves.length == 0 || depth === 0) {
+    return score;
+  }
+
+  if (maximizingPlayer) {
+    let bestScore = -Infinity;
+    for (const move of availableMoves) {
+      const newBoard = JSON.parse(JSON.stringify(board));
+      newBoard[move[0]][move[1]] = AIPLAYER;
+      const currentScore = minimax(newBoard, depth - 1, false, AIPLAYER);
+      bestScore = Math.max(bestScore, currentScore);
+    }
+
+    return bestScore;
+  } else {
+    let bestScore = Infinity;
+    for (const move of availableMoves) {
+      const newBoard = JSON.parse(JSON.stringify(board));
+      newBoard[move[0]][move[1]] = config.value.isXTurn ? "O" : "X"
+      const currentScore = minimax(newBoard, depth - 1, true, HUMANPLAYER);
+      bestScore = Math.min(bestScore, currentScore);
+    }
+    return bestScore;
+  }
+}
+
+
 </script>
 
 <template>
