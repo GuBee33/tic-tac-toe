@@ -22,32 +22,27 @@ const config: Ref<TheConfig> = ref({
     isXTurn: true,
     hasWonAll: '',
     lastClick: [-1, -1],
-    ThreeTimesThree: [['', '', ''], ['', '', ''], ['', '', '']],
-    background: [
-        ['black', 'black', 'black'],
-        ['black', 'black', 'black'],
-        ['black', 'black', 'black'],
-    ],
-    availableCells: [
-        [0, 0], [0, 1], [0, 2],
-        [1, 0], [1, 1], [1, 2],
-        [2, 0], [2, 1], [2, 2]],
+    ThreeTimesThree: [],
+    background: [],
+    availableCells: [],
 })
 
 const reset = () => {
     config.value.isXTurn = true
     config.value.hasWonAll = ""
-    config.value.ThreeTimesThree = [["", "", ""], ["", "", ""], ["", "", ""]]
-    config.value.background = [
-        ['black', 'black', 'black'],
-        ['black', 'black', 'black'],
-        ['black', 'black', 'black'],
-    ]
-    config.value.availableCells = [
-        [0, 0], [0, 1], [0, 2],
-        [1, 0], [1, 1], [1, 2],
-        [2, 0], [2, 1], [2, 2]]
+    for (let i = 0; i < 3; i++) {
+        let empty: CellValue[] = []
+        let bg = []
+        for (let j = 0; j < 3; j++) {
+            empty.push("")
+            bg.push("black")
+            config.value.availableCells.push([i, j])
+        }
+        config.value.ThreeTimesThree.push(empty)
+        config.value.background.push(bg)
+    }
 }
+reset()
 
 const updateConfig = (i: number, j: number): void => {
     const currentSign: CellValue = config.value.isXTurn ? 'X' : 'O';
