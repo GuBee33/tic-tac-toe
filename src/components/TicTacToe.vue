@@ -48,32 +48,102 @@ const reset = () => {
         [1, 0], [1, 1], [1, 2],
         [2, 0], [2, 1], [2, 2]]
 }
+
+const updateConfig = (i: number, j: number): void => {
+    const currentSign: CellValue = config.value.isXTurn ? 'X' : 'O';
+    config.value.ThreeTimesThree[i][j] = currentSign;
+    config.value.isXTurn = !config.value.isXTurn;
+    config.value.availableCells = config.value.availableCells.filter(cell => !(cell[0] === i && cell[1] === j));
+    checkWin(config.value.ThreeTimesThree, i, j);
+}
+
 const putASign = (i: number, j: number): void => {
     const canPlaceSign =
         !config.value.ThreeTimesThree[i][j] &&
         !config.value.hasWonAll
-
     if (canPlaceSign) {
-        const currentSign: CellValue = config.value.isXTurn ? 'X' : 'O';
-        config.value.ThreeTimesThree[i][j] = currentSign;
-        config.value.isXTurn = !config.value.isXTurn;
-        config.value.availableCells = config.value.availableCells.filter(cell => !(cell[0] === i && cell[1] === j));
-        checkWin(config.value.ThreeTimesThree, i, j);
-        if (!isTwoplayer.value) {
+        updateConfig(i, j)
+        if (!isTwoplayer.value && !config.value.hasWonAll) {
             autoPlay()
         }
     }
 };
 
 
-function autoPlay() {
-    let [i, j] = config.value.availableCells[Math.floor(Math.random() * config.value.availableCells.length)]
-    const currentSign: CellValue = config.value.isXTurn ? 'X' : 'O';
-    config.value.ThreeTimesThree[i][j] = currentSign;
-    config.value.isXTurn = !config.value.isXTurn;
-    config.value.availableCells = config.value.availableCells.filter(cell => !(cell[0] === i && cell[1] === j));
-    checkWin(config.value.ThreeTimesThree, i, j);
+function evaluate(board: ThreeTimesThreeMatrix, availableMoves: number[][], AIPLAYER: CellValue, HUMANPLAYER: CellValue): number {
 
+    const [row, col, diag] = checkGameStatus(board);
+    const winner = row.won ? board[row.index][0] : (col.won ? board[0][col.index] : (diag.won ? board[1][1] : (availableMoves.length === 0 ? "draw" : '')));
+    if (winner == AIPLAYER) {
+        return 10;
+    } else if (winner == HUMANPLAYER) {
+        return -10;
+    } else {
+        return 0;
+    }
+}
+
+function getAvailableMoves(board: ThreeTimesThreeMatrix) {
+    return board.flatMap((row, i) => row.map((cell, j) => ({ cell, indexes: [i, j] }))).filter(({ cell }) => cell === "").map(({ indexes }) => indexes);
+}
+
+function minimax(board: ThreeTimesThreeMatrix, depth: number, maximizingPlayer: boolean, AIPLAYER: CellValue): number {
+    const HUMANPLAYER = AIPLAYER == "X" ? "O" : "X"
+    const availableMoves = getAvailableMoves(board);
+    const score = evaluate(board, availableMoves, AIPLAYER, HUMANPLAYER);
+
+    if (score === 10 || score === -10 || availableMoves.length == 0 || depth === 0) {
+        return score;
+    }
+
+    if (maximizingPlayer) {
+        let bestScore = -Infinity;
+        for (const move of availableMoves) {
+            const newBoard = JSON.parse(JSON.stringify(board));
+            newBoard[move[0]][move[1]] = AIPLAYER;
+            const currentScore = minimax(newBoard, depth - 1, false, AIPLAYER);
+            bestScore = Math.max(bestScore, currentScore);
+        }
+
+        return bestScore;
+    } else {
+        let bestScore = Infinity;
+        for (const move of availableMoves) {
+            const newBoard = JSON.parse(JSON.stringify(board));
+            newBoard[move[0]][move[1]] = config.value.isXTurn ? "O" : "X"
+            const currentScore = minimax(newBoard, depth - 1, true, HUMANPLAYER);
+            bestScore = Math.min(bestScore, currentScore);
+        }
+        return bestScore;
+    }
+}
+
+function getBestMove(board: ThreeTimesThreeMatrix, AIPLAYER: CellValue): number[] {
+    let bestMove = [-1, -1];
+    let bestScore = -Infinity;
+
+    const availableMoves = board.flatMap((row, i) => row.map((cell, j) => ({ cell, indexes: [i, j] }))).filter(({ cell }) => cell === "").map(({ indexes }) => indexes);
+    if (availableMoves.some(x => x[0] == 1 && x[1] == 1)) {
+        return [1, 1]
+    }
+    else {
+        for (const move of availableMoves) {
+            const newBoard = JSON.parse(JSON.stringify(board));
+            newBoard[move[0]][move[1]] = AIPLAYER;
+            const score = minimax(newBoard, 8, false, AIPLAYER); // Depth set to 8 for Tic-tac-toe
+            if (score > bestScore) {
+                bestScore = score;
+                bestMove = move;
+            }
+        }
+        return bestMove;
+    }
+}
+
+function autoPlay() {
+    const AIPLAYER = config.value.isXTurn ? 'O' : 'X'
+    let [i, j] = getBestMove(config.value.ThreeTimesThree, AIPLAYER)
+    updateConfig(i, j);
 }
 
 function checkRows(matrix: ThreeTimesThreeMatrix): WinData {
