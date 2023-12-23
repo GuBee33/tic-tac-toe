@@ -20,69 +20,86 @@ interface TheConfig {
   background: string[][][][],
   lastClick: number[],
   winnerBackground: string[][]
+  availableCells: number[][]
 }
 const isTwoplayer: Ref<boolean> = ref((true))
 const config: Ref<TheConfig> = ref({
   isXTurn: true,
-  hasWon: [[false, false, false], [false, false, false], [false, false, false]],
+  hasWon: [],
   hasWonAll: '',
   lastClick: [-1, -1],
-  ThreeTimesThree: [['', '', ''], ['', '', ''], ['', '', '']],
+  ThreeTimesThree: [],
   BigThreeTimesThree: [
-    [
-      [['', '', ''], ['', '', ''], ['', '', '']],
-      [['', '', ''], ['', '', ''], ['', '', '']],
-      [['', '', ''], ['', '', ''], ['', '', '']]
-    ],
-    [
-      [['', '', ''], ['', '', ''], ['', '', '']],
-      [['', '', ''], ['', '', ''], ['', '', '']],
-      [['', '', ''], ['', '', ''], ['', '', '']]
-    ],
-    [
-      [['', '', ''], ['', '', ''], ['', '', '']],
-      [['', '', ''], ['', '', ''], ['', '', '']],
-      [['', '', ''], ['', '', ''], ['', '', '']]
-    ]
   ],
   background: [
-    [
-      [['black', 'black', 'black'], ['black', 'black', 'black'], ['black', 'black', 'black']],
-      [['black', 'black', 'black'], ['black', 'black', 'black'], ['black', 'black', 'black']],
-      [['black', 'black', 'black'], ['black', 'black', 'black'], ['black', 'black', 'black']]
-    ],
-    [
-      [['black', 'black', 'black'], ['black', 'black', 'black'], ['black', 'black', 'black']],
-      [['black', 'black', 'black'], ['black', 'black', 'black'], ['black', 'black', 'black']],
-      [['black', 'black', 'black'], ['black', 'black', 'black'], ['black', 'black', 'black']]
-    ],
-    [
-      [['black', 'black', 'black'], ['black', 'black', 'black'], ['black', 'black', 'black']],
-      [['black', 'black', 'black'], ['black', 'black', 'black'], ['black', 'black', 'black']],
-      [['black', 'black', 'black'], ['black', 'black', 'black'], ['black', 'black', 'black']]
-    ]
+
   ],
-  winnerBackground: [["grey", "grey", "grey"], ["grey", "grey", "grey"], ["grey", "grey", "grey"]]
+  winnerBackground: [],
+  availableCells: [],
 })
+
 
 const reset = () => {
   config.value.isXTurn = true
-  config.value.hasWon = [[false, false, false], [false, false, false], [false, false, false]]
   config.value.hasWonAll = ""
   config.value.lastClick = [-1, -1]
-  config.value.ThreeTimesThree = [["", "", ""], ["", "", ""], ["", "", ""]]
-  config.value.BigThreeTimesThree = [
-    [[["", "", ""], ["", "", ""], ["", "", ""]], [["", "", ""], ["", "", ""], ["", "", ""]], [["", "", ""], ["", "", ""], ["", "", ""]]],
-    [[["", "", ""], ["", "", ""], ["", "", ""]], [["", "", ""], ["", "", ""], ["", "", ""]], [["", "", ""], ["", "", ""], ["", "", ""]]],
-    [[["", "", ""], ["", "", ""], ["", "", ""]], [["", "", ""], ["", "", ""], ["", "", ""]], [["", "", ""], ["", "", ""], ["", "", ""]]]
-  ]
-  config.value.background = [
-    [[["black", "black", "black"], ["black", "black", "black"], ["black", "black", "black"]], [["black", "black", "black"], ["black", "black", "black"], ["black", "black", "black"]], [["black", "black", "black"], ["black", "black", "black"], ["black", "black", "black"]]],
-    [[["black", "black", "black"], ["black", "black", "black"], ["black", "black", "black"]], [["black", "black", "black"], ["black", "black", "black"], ["black", "black", "black"]], [["black", "black", "black"], ["black", "black", "black"], ["black", "black", "black"]]],
-    [[["black", "black", "black"], ["black", "black", "black"], ["black", "black", "black"]], [["black", "black", "black"], ["black", "black", "black"], ["black", "black", "black"]], [["black", "black", "black"], ["black", "black", "black"], ["black", "black", "black"]]]
-  ]
-  config.value.winnerBackground = [["grey", "grey", "grey"], ["grey", "grey", "grey"], ["grey", "grey", "grey"]]
+  config.value.BigThreeTimesThree = []
+  config.value.background = []
+  config.value.ThreeTimesThree = []
+  config.value.winnerBackground = []
+  config.value.hasWon = []
+  config.value.availableCells = []
 
+  for (let x = 0; x < 3; x++) {
+    let bigRow: ThreeTimesThreeMatrix[] = []
+    let bigRowbg = []
+    let row2: CellValue[] = []
+    let winnerbg = []
+    let won = []
+    for (let y = 0; y < 3; y++) {
+      let smallMatrix: ThreeTimesThreeMatrix = []
+      let smallMatrixbg = []
+      row2.push("")
+      winnerbg.push("grey")
+      won.push(false)
+      for (let i = 0; i < 3; i++) {
+        let row: CellValue[] = []
+        let rowbg = []
+        for (let j = 0; j < 3; j++) {
+          config.value.availableCells.push([x, y, i, j])
+          row.push("")
+          rowbg.push("black")
+        }
+        smallMatrix.push(row)
+        smallMatrixbg.push(rowbg)
+      }
+      bigRow.push(smallMatrix)
+      bigRowbg.push(smallMatrixbg)
+    }
+    config.value.BigThreeTimesThree.push(bigRow)
+    config.value.background.push(bigRowbg)
+    config.value.ThreeTimesThree.push(row2)
+    config.value.winnerBackground.push(winnerbg)
+    config.value.hasWon.push(won)
+  }
+
+}
+reset()
+
+const updateConfig = (x: number, y: number, i: number, j: number): void => {
+  const currentSign: CellValue = config.value.isXTurn ? 'X' : 'O';
+  config.value.BigThreeTimesThree[x][y][i][j] = currentSign;
+  config.value.isXTurn = !config.value.isXTurn;
+  config.value.lastClick = [i, j];
+
+  config.value.hasWon[x][y] = checkWin(config.value.BigThreeTimesThree[x][y], x, y);
+  if (config.value.hasWon[x][y]) {
+    config.value.availableCells = config.value.availableCells.filter(cell => !(cell[0] === x && cell[1] === y));
+  }
+  const [row, col, diag] = checkGameStatus(config.value.ThreeTimesThree);
+
+  config.value.hasWonAll = row.won || col.won || diag.won ? (config.value.isXTurn ? 'O' : 'X') : (config.value.ThreeTimesThree.map((row, i) => row.some(c => c === "") ? row.map((c, j) => c === "" ? config.value.BigThreeTimesThree[i][j] : -1) : -1).flat().filter(x => x != -1).flat().flat().some(val => val === '') ? '' : 'draw');
+  config.value.availableCells = config.value.availableCells.filter(cell => !(cell[0] === x && cell[1] === y && cell[2] === i && cell[3] === j));
 }
 const putASign = (x: number, y: number, i: number, j: number): void => {
   const canPlaceSign =
@@ -96,17 +113,27 @@ const putASign = (x: number, y: number, i: number, j: number): void => {
       !config.value.BigThreeTimesThree[config.value.lastClick[0]][config.value.lastClick[1]].flat().flat().some(val => val === '')
     );
   if (canPlaceSign) {
-    const currentSign: CellValue = config.value.isXTurn ? 'X' : 'O';
-    config.value.BigThreeTimesThree[x][y][i][j] = currentSign;
-    config.value.isXTurn = !config.value.isXTurn;
-    config.value.lastClick = [i, j];
-
-    config.value.hasWon[x][y] = checkWin(config.value.BigThreeTimesThree[x][y], x, y);
-    const [row, col, diag] = checkGameStatus(config.value.ThreeTimesThree);
-
-    config.value.hasWonAll = row.won || col.won || diag.won ? (config.value.isXTurn ? 'O' : 'X') : (config.value.ThreeTimesThree.map((row, i) => row.some(c => c === "") ? row.map((c, j) => c === "" ? config.value.BigThreeTimesThree[i][j] : -1) : -1).flat().filter(x => x != -1).flat().flat().some(val => val === '') ? '' : 'draw');
+    updateConfig(x, y, i, j)
+    if (!isTwoplayer.value) {
+      const [x2, y2, i2, j2] = getBestMove(i, j)
+      updateConfig(x2, y2, i2, j2)
+    }
   }
 };
+
+const returnRandomFromArray = (matrix: any[]) => {
+  return matrix[Math.round(Math.random() * matrix.length)]
+}
+
+const getBestMove = (i: number, j: number): number[] => {
+  const availableCellsInTargetMatrix = config.value.availableCells.filter(cell => (cell[0] === i && cell[1] === j))
+  if (availableCellsInTargetMatrix.length > 0) {
+    return returnRandomFromArray(availableCellsInTargetMatrix)
+  }
+  else {
+    return returnRandomFromArray(config.value.availableCells)
+  }
+}
 
 const markValidArea = (x: number, y: number) => {
   if (config.value.hasWonAll) {
