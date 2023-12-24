@@ -271,8 +271,6 @@ const checkGameStatus = (matrix: ThreeTimesThreeMatrix): [WinData, WinData, WinD
     background-color: black;
 }
 
-.grey {}
-
 .green {
     background-color: green;
 }

@@ -143,6 +143,8 @@ const getBestMove3x3 = (availableMoves: number[][], i: number, j: number, AIPLAY
   }
 }
 
+
+
 const getBestMove = (i: number, j: number, AIPLAYER: CellValue): number[] => {
   const availableMoves = config.value.availableCells.filter(cell => (cell[0] === i && cell[1] === j))
   if (availableMoves.length > 0) {
@@ -387,7 +389,9 @@ const minimax = (board: ThreeTimesThreeMatrix, depth: number, maximizingPlayer: 
   background-color: black;
 }
 
-.grey {}
+.grey {
+  background-color: 2a323d;
+}
 
 .green {
   background-color: green;
