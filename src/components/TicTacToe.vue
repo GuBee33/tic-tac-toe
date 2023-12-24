@@ -72,13 +72,13 @@ const evaluate = (board: ThreeTimesThreeMatrix, availableMoves: number[][], AIPL
 
     const [row, col, diag] = checkGameStatus(board);
     const winner = row.won ? board[row.index][0] : (col.won ? board[0][col.index] : (diag.won ? board[1][1] : (availableMoves.length === 0 ? "draw" : '')));
+    let score = 0;
     if (winner == AIPLAYER) {
-        return 10;
+        score = 10;
     } else if (winner == HUMANPLAYER) {
-        return -10;
-    } else {
-        return 0;
+        score = -10;
     }
+    return score;
 }
 
 const getAvailableMoves = (board: ThreeTimesThreeMatrix) => {
@@ -102,14 +102,13 @@ const minimax = (board: ThreeTimesThreeMatrix, depth: number, maximizingPlayer: 
             const currentScore = minimax(newBoard, depth - 1, false, AIPLAYER);
             bestScore = Math.max(bestScore, currentScore);
         }
-
         return bestScore;
     } else {
         let bestScore = Infinity;
         for (const move of availableMoves) {
             const newBoard = JSON.parse(JSON.stringify(board));
-            newBoard[move[0]][move[1]] = config.value.isXTurn ? "O" : "X"
-            const currentScore = minimax(newBoard, depth - 1, true, HUMANPLAYER);
+            newBoard[move[0]][move[1]] = HUMANPLAYER
+            const currentScore = minimax(newBoard, depth - 1, true, AIPLAYER);
             bestScore = Math.min(bestScore, currentScore);
         }
         return bestScore;
@@ -121,25 +120,21 @@ const getBestMove = (board: ThreeTimesThreeMatrix, AIPLAYER: CellValue): number[
     let bestScore = -Infinity;
 
     const availableMoves = getAvailableMoves(board)
-    if (availableMoves.some(x => x[0] == 1 && x[1] == 1)) {
-        return [1, 1]
-    }
-    else {
-        for (const move of availableMoves) {
-            const newBoard = JSON.parse(JSON.stringify(board));
-            newBoard[move[0]][move[1]] = AIPLAYER;
-            const score = minimax(newBoard, 8, false, AIPLAYER); // Depth set to 8 for Tic-tac-toe
-            if (score > bestScore) {
-                bestScore = score;
-                bestMove = move;
-            }
+    for (const move of availableMoves) {
+        const newBoard = JSON.parse(JSON.stringify(board));
+        newBoard[move[0]][move[1]] = AIPLAYER;
+
+        const score = minimax(newBoard, 8, false, AIPLAYER) + (move[0] + move[1] === 2 ? (move[0] == 1 ? 3 : 2) : 0);
+        if (score > bestScore) {
+            bestScore = score;
+            bestMove = move;
         }
-        return bestMove;
     }
+    return bestMove;
 }
 
 const autoPlay = () => {
-    const AIPLAYER = config.value.isXTurn ? 'O' : 'X'
+    const AIPLAYER = config.value.isXTurn ? 'X' : 'O'
     let [i, j] = getBestMove(config.value.ThreeTimesThree, AIPLAYER)
     updateConfig(i, j);
 }
