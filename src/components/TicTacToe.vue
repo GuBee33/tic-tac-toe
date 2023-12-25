@@ -2,14 +2,10 @@
 import { ref, Ref } from 'vue'
 import Button from 'primevue/button';
 import Checkbox from 'primevue/checkbox';
+import { TicTacToe, CellValue, ThreeTimesThreeMatrix } from '../utils/tictactoe';
 
+const functions = new TicTacToe();
 
-type CellValue = 'X' | 'O' | '';
-type ThreeTimesThreeMatrix = CellValue[][];
-interface WinData {
-    won: boolean;
-    index: number;
-}
 interface TheConfig {
     isXTurn: boolean,
     hasWonAll: CellValue | "draw",
@@ -17,7 +13,7 @@ interface TheConfig {
     background: string[][],
     availableCells: number[][],
 }
-const isTwoplayer: Ref<boolean> = ref((true))
+const isTwoplayer: Ref<boolean> = ref((false))
 const config: Ref<TheConfig> = ref({
     isXTurn: true,
     hasWonAll: '',
@@ -67,64 +63,17 @@ const putASign = (i: number, j: number): void => {
     }
 };
 
-
-const evaluate = (board: ThreeTimesThreeMatrix, availableMoves: number[][], AIPLAYER: CellValue, HUMANPLAYER: CellValue): number => {
-
-    const [row, col, diag] = checkGameStatus(board);
-    const winner = row.won ? board[row.index][0] : (col.won ? board[0][col.index] : (diag.won ? board[1][1] : (availableMoves.length === 0 ? "draw" : '')));
-    let score = 0;
-    if (winner == AIPLAYER) {
-        score = 10;
-    } else if (winner == HUMANPLAYER) {
-        score = -10;
-    }
-    return score;
-}
-
-const getAvailableMoves = (board: ThreeTimesThreeMatrix) => {
-    return board.flatMap((row, i) => row.map((cell, j) => ({ cell, indexes: [i, j] }))).filter(({ cell }) => cell === "").map(({ indexes }) => indexes);
-}
-
-const minimax = (board: ThreeTimesThreeMatrix, depth: number, maximizingPlayer: boolean, AIPLAYER: CellValue): number => {
-    const HUMANPLAYER = AIPLAYER == "X" ? "O" : "X"
-    const availableMoves = getAvailableMoves(board);
-    const score = evaluate(board, availableMoves, AIPLAYER, HUMANPLAYER);
-
-    if (score === 10 || score === -10 || availableMoves.length == 0 || depth === 0) {
-        return score;
-    }
-
-    if (maximizingPlayer) {
-        let bestScore = -Infinity;
-        for (const move of availableMoves) {
-            const newBoard = JSON.parse(JSON.stringify(board));
-            newBoard[move[0]][move[1]] = AIPLAYER;
-            const currentScore = minimax(newBoard, depth - 1, false, AIPLAYER);
-            bestScore = Math.max(bestScore, currentScore);
-        }
-        return bestScore;
-    } else {
-        let bestScore = Infinity;
-        for (const move of availableMoves) {
-            const newBoard = JSON.parse(JSON.stringify(board));
-            newBoard[move[0]][move[1]] = HUMANPLAYER
-            const currentScore = minimax(newBoard, depth - 1, true, AIPLAYER);
-            bestScore = Math.min(bestScore, currentScore);
-        }
-        return bestScore;
-    }
-}
-
 const getBestMove = (board: ThreeTimesThreeMatrix, AIPLAYER: CellValue): number[] => {
     let bestMove = [-1, -1];
     let bestScore = -Infinity;
 
-    const availableMoves = getAvailableMoves(board)
+    const availableMoves = functions.getAvailableMoves(board)
     for (const move of availableMoves) {
         const newBoard = JSON.parse(JSON.stringify(board));
         newBoard[move[0]][move[1]] = AIPLAYER;
 
-        const score = minimax(newBoard, 8, false, AIPLAYER) + (move[0] + move[1] === 2 ? (move[0] == 1 ? 3 : 2) : 0);
+        const score = functions.minimax(newBoard, 8, false, AIPLAYER) + (move[0] + move[1] === 2 ? (move[0] == 1 ? 3 : 2) : 0);
+        console.log(score, move)
         if (score > bestScore) {
             bestScore = score;
             bestMove = move;
@@ -139,51 +88,15 @@ const autoPlay = () => {
     updateConfig(i, j);
 }
 
-const checkRows = (matrix: ThreeTimesThreeMatrix): WinData => {
-    for (let i = 0; i < matrix.length; i++) {
-        const row = matrix[i];
-        if (row[0] !== '' && row.every(val => val === row[0])) {
-            return { won: true, index: i };
-        }
-    }
-    return { won: false, index: -1 };
-}
-
-const checkColumns = (matrix: ThreeTimesThreeMatrix): WinData => {
-    for (let i = 0; i < matrix.length; i++) {
-        if (matrix[0][i] !== "") {
-            let columnSame = true;
-            for (let j = 1; j < matrix.length; j++) {
-                if (matrix[j][i] !== matrix[0][i]) {
-                    columnSame = false;
-                    break;
-                }
-            }
-            if (columnSame) {
-                return { won: true, index: i };
-            }
-        }
-    }
-    return { won: false, index: -1 };
-}
-
-const checkDiagonals = (matrix: ThreeTimesThreeMatrix): WinData => {
-    const topLeftBottomRight = matrix[0][0] !== "" && matrix[0][0] === matrix[1][1] && matrix[1][1] === matrix[2][2];
-    const topRightBottomLeft = matrix[0][2] !== "" && matrix[0][2] === matrix[1][1] && matrix[1][1] === matrix[2][0];
-
-    if (topLeftBottomRight) {
-        return { won: true, index: 0 };
-    }
-    else if (topRightBottomLeft) {
-        return { won: true, index: 2 };
-    }
-    else {
-        return { won: false, index: -1 };
-    }
+const checkWin = (matrix: ThreeTimesThreeMatrix, x: number, y: number) => {
+    const [row, col, diag] = functions.checkGameStatus(matrix);
+    config.value.hasWonAll = row.won || col.won || diag.won ? (config.value.isXTurn ? 'O' : 'X') : (config.value.availableCells.length === 0 ? "draw" : '');
+    const color = config.value.ThreeTimesThree[x][y] === 'O' ? 'green' : 'red';
+    setBackground(config.value.ThreeTimesThree, config.value.background, color)
 }
 
 const setBackground = (matrix: ThreeTimesThreeMatrix, colorMatrix: string[][], color: string) => {
-    const [row, col, diag] = checkGameStatus(matrix);
+    const [row, col, diag] = functions.checkGameStatus(matrix);
     if (row.won) {
         colorMatrix[row.index] = Array(3).fill(color);
     } else if (col.won) {
@@ -203,19 +116,7 @@ const setBackground = (matrix: ThreeTimesThreeMatrix, colorMatrix: string[][], c
     }
 }
 
-const checkWin = (matrix: ThreeTimesThreeMatrix, x: number, y: number) => {
-    const [row, col, diag] = checkGameStatus(matrix);
-    config.value.hasWonAll = row.won || col.won || diag.won ? (config.value.isXTurn ? 'O' : 'X') : (config.value.availableCells.length === 0 ? "draw" : '');
-    const color = config.value.ThreeTimesThree[x][y] === 'O' ? 'green' : 'red';
-    setBackground(config.value.ThreeTimesThree, config.value.background, color)
-}
 
-const checkGameStatus = (matrix: ThreeTimesThreeMatrix): [WinData, WinData, WinData] => {
-    const row = checkRows(matrix);
-    const col = checkColumns(matrix);
-    const diag = checkDiagonals(matrix);
-    return [row, col, diag];
-}
 </script>
 
 <template>
