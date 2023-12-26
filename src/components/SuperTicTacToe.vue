@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, Ref } from 'vue'
 import Button from 'primevue/button';
-import Checkbox from 'primevue/checkbox';
+import SelectButton from 'primevue/selectbutton';
+
 import { TicTacToe, CellValue, ThreeTimesThreeMatrix, WinData } from '../utils/tictactoe';
 
 const functions = new TicTacToe();
@@ -20,6 +21,12 @@ interface TheConfig {
   // availableCells: number[][]
 }
 const isTwoplayer: Ref<boolean> = ref((false))
+const players = [
+  { title: "Singleplayer", value: false },
+  { title: "Multiplayer", value: true },
+]
+const level: Ref<"easy" | "medium" | "hard"> = ref(("easy"))
+const levels = [{ name: "easy", disabled: false }, { name: "medium", disabled: false }, { name: "hard", disabled: true }]
 const config: Ref<TheConfig> = ref({
   isXTurn: true,
   hasWon: [],
@@ -102,7 +109,16 @@ const putASign = (x: number, y: number, i: number, j: number): void => {
     updateConfig(x, y, i, j)
     if (!isTwoplayer.value && config.value.hasWonAll === '') {
       const AIPLAYER = config.value.isXTurn ? 'X' : 'O'
-      const [x2, y2, i2, j2] = getBestMove(i, j, AIPLAYER)
+      let [x2, y2, i2, j2] = [-1, -1, -1, -1]
+      if (level.value === "easy") {
+        [x2, y2, i2, j2] = getRandomMove(i, j)
+      }
+      else if (level.value === "medium") {
+        [x2, y2, i2, j2] = getBestMove(i, j, AIPLAYER)
+      }
+      else if (level.value === "hard") {
+        // TODO
+      }
       updateConfig(x2, y2, i2, j2)
     }
   }
@@ -124,10 +140,28 @@ const getBestMove3x3 = (board: ThreeTimesThreeMatrix, AIPLAYER: CellValue): { be
   return { bestMove, bestScore };
 }
 
+const getAvailableBoard = (i: number, j: number): [number, number, ThreeTimesThreeMatrix] => {
+  if (config.value.ThreeTimesThree[i][j] === '') {
+    return [i, j, config.value.BigThreeTimesThree[i][j]]
+  }
+  else {
+    const availableBoards = functions.getAvailableMoves(config.value.ThreeTimesThree)
+    const randomIndex = Math.floor(Math.random() * availableBoards.length);
+    const [x, y] = availableBoards[randomIndex];
+    return [x, y, config.value.BigThreeTimesThree[x][y]]
+  }
+}
+
+const getRandomMove = (i: number, j: number): number[] => {
+  const [x, y, board] = getAvailableBoard(i, j)
+  const availableMoves = functions.getAvailableMoves(board)
+  const randomIndex = Math.floor(Math.random() * availableMoves.length);
+  return [x, y, ...availableMoves[randomIndex]];
+}
 
 
 const getBestMove = (i: number, j: number, AIPLAYER: CellValue): number[] => {
-  if (functions.getAvailableMoves(config.value.BigThreeTimesThree[i][j]).length > 0) {
+  if (config.value.ThreeTimesThree[i][j] === '') {
     return [i, j, ...getBestMove3x3(config.value.BigThreeTimesThree[i][j], AIPLAYER).bestMove]
   }
   else {
@@ -203,8 +237,11 @@ const setWinner = (matrix: ThreeTimesThreeMatrix, x: number, y: number) => {
 </script>
 
 <template>
-  <label for="is2player" class="ml-2"> 2 player mode </label>
-  <Checkbox v-model="isTwoplayer" input-id="is2player" :binary="true" />
+  <SelectButton v-model="isTwoplayer" :options="players" optionLabel="title" optionValue="value" aria-labelledby="basic"
+    :allowEmpty="false" />
+  <SelectButton v-model="level" :options="levels" aria-labelledby="basic" optionLabel="name" optionValue="name"
+    optionDisabled="disabled" :allowEmpty="false" />
+
   <h2 v-if="config.hasWonAll == 'X' || config.hasWonAll == 'O'">"{{ config.hasWonAll }}" won the game
   </h2>
   <h2 v-else-if="config.hasWonAll == 'draw'">

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, Ref } from 'vue'
 import Button from 'primevue/button';
-import Checkbox from 'primevue/checkbox';
+import SelectButton from 'primevue/selectbutton';
 import { TicTacToe, CellValue, ThreeTimesThreeMatrix } from '../utils/tictactoe';
 
 const functions = new TicTacToe();
@@ -14,6 +14,12 @@ interface TheConfig {
     availableCells: number[][],
 }
 const isTwoplayer: Ref<boolean> = ref((false))
+const players = [
+    { title: "Singleplayer", value: false },
+    { title: "Multiplayer", value: true },
+]
+const level: Ref<"easy" | "hard"> = ref(("hard"))
+const levels = ["easy", "hard"]
 const config: Ref<TheConfig> = ref({
     isXTurn: true,
     hasWonAll: '',
@@ -63,6 +69,12 @@ const putASign = (i: number, j: number): void => {
     }
 };
 
+const getRandomMove = (board: ThreeTimesThreeMatrix): number[] => {
+    const availableMoves = functions.getAvailableMoves(board)
+    const randomIndex = Math.floor(Math.random() * availableMoves.length);
+    return availableMoves[randomIndex];
+}
+
 const getBestMove = (board: ThreeTimesThreeMatrix, AIPLAYER: CellValue): number[] => {
     let bestMove = [-1, -1];
     let bestScore = -Infinity;
@@ -71,9 +83,7 @@ const getBestMove = (board: ThreeTimesThreeMatrix, AIPLAYER: CellValue): number[
     for (const move of availableMoves) {
         const newBoard = JSON.parse(JSON.stringify(board));
         newBoard[move[0]][move[1]] = AIPLAYER;
-
         const score = functions.minimax(newBoard, 8, false, AIPLAYER) + (move[0] + move[1] === 2 ? (move[0] == 1 ? 3 : 2) : 0);
-        console.log(score, move)
         if (score > bestScore) {
             bestScore = score;
             bestMove = move;
@@ -84,8 +94,15 @@ const getBestMove = (board: ThreeTimesThreeMatrix, AIPLAYER: CellValue): number[
 
 const autoPlay = () => {
     const AIPLAYER = config.value.isXTurn ? 'X' : 'O'
-    let [i, j] = getBestMove(config.value.ThreeTimesThree, AIPLAYER)
-    updateConfig(i, j);
+    let [i, j] = [-1, -1]
+    if (level.value === "easy") {
+        [i, j] = getRandomMove(config.value.ThreeTimesThree)
+    } else {
+        [i, j] = getBestMove(config.value.ThreeTimesThree, AIPLAYER)
+    }
+    if (i !== -1 && j !== -1) {
+        updateConfig(i, j);
+    }
 }
 
 const checkWin = (matrix: ThreeTimesThreeMatrix, x: number, y: number) => {
@@ -120,8 +137,10 @@ const setBackground = (matrix: ThreeTimesThreeMatrix, colorMatrix: string[][], c
 </script>
 
 <template>
-    <label for="is2player" class="ml-2"> 2 player mode </label>
-    <Checkbox v-model="isTwoplayer" input-id="is2player" :binary="true" />
+    <SelectButton v-model="isTwoplayer" :options="players" optionLabel="title" optionValue="value" aria-labelledby="basic"
+        :allowEmpty="false" />
+    <SelectButton v-model="level" :options="levels" aria-labelledby="basic" :allowEmpty="false" />
+
     <h2 v-if="config.hasWonAll == 'X' || config.hasWonAll == 'O'">"{{ config.hasWonAll }}" won the game
     </h2>
     <h2 v-else-if="config.hasWonAll == 'draw'">
