@@ -88,7 +88,7 @@ export class TicTacToe {
     return score;
   };
 
-  getAvailableMoves = (board: ThreeTimesThreeMatrix) => {
+  getAvailableMoves = (board: ThreeTimesThreeMatrix): number[][] => {
     if (!this.checkGameStatus(board).some((data) => data.won)) {
       return board
         .flatMap((row, i) => row.map((cell, j) => ({ cell, indexes: [i, j] })))

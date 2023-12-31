@@ -22,11 +22,11 @@ interface TheConfig {
 }
 const isTwoplayer: Ref<boolean> = ref((false))
 const players = [
-  { title: "Singleplayer", value: false },
-  { title: "Multiplayer", value: true },
+  { title: "Human vs Computer", value: false },
+  { title: "Human vs Human", value: true },
 ]
 const level: Ref<"easy" | "medium" | "hard"> = ref(("easy"))
-const levels = [{ name: "easy", disabled: false }, { name: "medium", disabled: false }, { name: "hard", disabled: true }]
+const levels = [{ name: "easy", disabled: false, label: "Easy" }, { name: "medium", disabled: false, label: "Medium" }, { name: "hard", disabled: false, label: "Hard" }]
 const config: Ref<TheConfig> = ref({
   isXTurn: true,
   hasWon: [],
@@ -38,7 +38,7 @@ const config: Ref<TheConfig> = ref({
   winnerBackground: [],
   // availableCells: [],
 })
-
+const bigtableClass = ref({ "bigtable": true, "cursor-wait": false })
 const reset = () => {
   config.value.isXTurn = true
   config.value.hasWonAll = ""
@@ -66,7 +66,6 @@ const reset = () => {
         let row: CellValue[] = []
         let rowbg = []
         for (let j = 0; j < 3; j++) {
-          // config.value.availableCells.push([x, y, i, j])
           row.push("")
           rowbg.push("black")
         }
@@ -94,7 +93,7 @@ const updateConfig = (x: number, y: number, i: number, j: number): void => {
   setWinner(config.value.BigThreeTimesThree[x][y], x, y);
 }
 
-const putASign = (x: number, y: number, i: number, j: number): void => {
+const putASign = async (x: number, y: number, i: number, j: number) => {
   const canPlaceSign =
     !config.value.BigThreeTimesThree[x][y][i][j] &&
     !config.value.hasWon[x][y] &&
@@ -108,21 +107,39 @@ const putASign = (x: number, y: number, i: number, j: number): void => {
   if (canPlaceSign) {
     updateConfig(x, y, i, j)
     if (!isTwoplayer.value && config.value.hasWonAll === '') {
-      const AIPLAYER = config.value.isXTurn ? 'X' : 'O'
-      let [x2, y2, i2, j2] = [-1, -1, -1, -1]
-      if (level.value === "easy") {
-        [x2, y2, i2, j2] = getRandomMove(i, j)
-      }
-      else if (level.value === "medium") {
-        [x2, y2, i2, j2] = getBestMove(i, j, AIPLAYER)
-      }
-      else if (level.value === "hard") {
-        // TODO
-      }
-      updateConfig(x2, y2, i2, j2)
+      bigtableClass.value = { "bigtable": true, "cursor-wait": true }
+      await botMove(i, j)
+      bigtableClass.value = { "bigtable": true, "cursor-wait": false }
     }
   }
 };
+
+const botMove = async (i: number, j: number) => {
+  const AIPLAYER = config.value.isXTurn ? 'X' : 'O'
+  let [x2, y2, i2, j2] = [-1, -1, -1, -1]
+  if (level.value === "easy") {
+    const [newX2, newY2, newI2, newJ2] = getRandomMove(i, j);
+    x2 = newX2;
+    y2 = newY2;
+    i2 = newI2;
+    j2 = newJ2;
+  }
+  else if (level.value === "medium") {
+    const [newX2, newY2, newI2, newJ2] = getAGoodtMove(i, j, AIPLAYER)
+    x2 = newX2;
+    y2 = newY2;
+    i2 = newI2;
+    j2 = newJ2;
+  }
+  else if (level.value === "hard") {
+    const [newX2, newY2, newI2, newJ2] = getBestMove(i, j, AIPLAYER)
+    x2 = newX2;
+    y2 = newY2;
+    i2 = newI2;
+    j2 = newJ2;
+  }
+  updateConfig(x2, y2, i2, j2)
+}
 
 const getBestMove3x3 = (board: ThreeTimesThreeMatrix, AIPLAYER: CellValue): { bestMove: number[], bestScore: number } => {
   let bestMove = [-1, -1];
@@ -132,6 +149,25 @@ const getBestMove3x3 = (board: ThreeTimesThreeMatrix, AIPLAYER: CellValue): { be
     const newBoard = JSON.parse(JSON.stringify(board));
     newBoard[move[0]][move[1]] = AIPLAYER;
     const score = functions.minimax(newBoard, 8, false, AIPLAYER)
+    if (score > bestScore) {
+      bestScore = score;
+      bestMove = move;
+    }
+  }
+  return { bestMove, bestScore };
+}
+
+
+const getBestMove3x3Plus = (board: ThreeTimesThreeMatrix, AIPLAYER: CellValue): { bestMove: number[], bestScore: number } => {
+  let bestMove = [-1, -1];
+  let bestScore = -Infinity;
+  const availableMoves = functions.getAvailableMoves(board)
+  for (const move of availableMoves) {
+    const newBoard = JSON.parse(JSON.stringify(board));
+    const neewNextMoveBoard = JSON.parse(JSON.stringify(config.value.BigThreeTimesThree[move[0]][move[1]]));
+    newBoard[move[0]][move[1]] = AIPLAYER;
+    const nextOppenentMoveScore = getBestMove3x3(neewNextMoveBoard, AIPLAYER === 'X' ? 'O' : 'X').bestScore
+    const score = functions.minimax(newBoard, 8, false, AIPLAYER) - nextOppenentMoveScore
     if (score > bestScore) {
       bestScore = score;
       bestMove = move;
@@ -152,6 +188,16 @@ const getAvailableBoard = (i: number, j: number): [number, number, ThreeTimesThr
   }
 }
 
+// const allAvailableMoves = (i: number, j: number): number[][] => {
+//   const boardCoords = config.value.ThreeTimesThree[i][j] === '' ? [[i, j]] : functions.getAvailableMoves(config.value.ThreeTimesThree)
+//   let allAvailableMoves: number[][] = []
+//   boardCoords.forEach(([x, y]) => {
+//     const availableMoves = functions.getAvailableMoves(config.value.BigThreeTimesThree[x][y])
+//     allAvailableMoves.push(...availableMoves.map(move => [x, y, ...move]))
+//   })
+//   return allAvailableMoves
+// }
+
 const getRandomMove = (i: number, j: number): number[] => {
   const [x, y, board] = getAvailableBoard(i, j)
   const availableMoves = functions.getAvailableMoves(board)
@@ -159,6 +205,27 @@ const getRandomMove = (i: number, j: number): number[] => {
   return [x, y, ...availableMoves[randomIndex]];
 }
 
+const getAGoodtMove = (i: number, j: number, AIPLAYER: CellValue): number[] => {
+  if (config.value.ThreeTimesThree[i][j] === '') {
+    return [i, j, ...getBestMove3x3Plus(config.value.BigThreeTimesThree[i][j], AIPLAYER).bestMove]
+  }
+  else {
+    let verybestMove: number[] = []
+    let verybestScore = -Infinity
+    for (let x = 0; x < 3; x++) {
+      for (let y = 0; y < 3; y++) {
+        if (config.value.ThreeTimesThree[x][y] === '') {
+          const { bestMove, bestScore } = getBestMove3x3Plus(config.value.BigThreeTimesThree[x][y], AIPLAYER)
+          if (bestScore > verybestScore) {
+            verybestScore = bestScore
+            verybestMove = [x, y, ...bestMove]
+          }
+        }
+      }
+    }
+    return verybestMove
+  }
+}
 
 const getBestMove = (i: number, j: number, AIPLAYER: CellValue): number[] => {
   if (config.value.ThreeTimesThree[i][j] === '') {
@@ -239,8 +306,8 @@ const setWinner = (matrix: ThreeTimesThreeMatrix, x: number, y: number) => {
 <template>
   <SelectButton v-model="isTwoplayer" :options="players" optionLabel="title" optionValue="value" aria-labelledby="basic"
     :allowEmpty="false" />
-  <SelectButton v-model="level" :options="levels" aria-labelledby="basic" optionLabel="name" optionValue="name"
-    optionDisabled="disabled" :allowEmpty="false" />
+  <SelectButton v-if="!isTwoplayer" v-model="level" :options="levels" aria-labelledby="basic" optionLabel="label"
+    optionValue="name" optionDisabled="disabled" :allowEmpty="false" />
 
   <h2 v-if="config.hasWonAll == 'X' || config.hasWonAll == 'O'">"{{ config.hasWonAll }}" won the game
   </h2>
@@ -251,7 +318,7 @@ const setWinner = (matrix: ThreeTimesThreeMatrix, x: number, y: number) => {
   <div v-else>
     It's "{{ config.isXTurn ? "X" : "O" }}"'s turn
   </div>
-  <table class="bigtable">
+  <table :class="bigtableClass">
     <tr v-for="(bigrow, x) in config.BigThreeTimesThree" :key="x">
       <td v-for="(bigcell, y) in bigrow" :key="y" :class="config.winnerBackground[x][y]">
         <table :class="markValidArea(x, y)">

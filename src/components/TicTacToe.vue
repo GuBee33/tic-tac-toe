@@ -15,11 +15,12 @@ interface TheConfig {
 }
 const isTwoplayer: Ref<boolean> = ref((false))
 const players = [
-    { title: "Singleplayer", value: false },
-    { title: "Multiplayer", value: true },
+    { title: "Human vs Computer", value: false },
+    { title: "Human vs Human", value: true },
 ]
 const level: Ref<"easy" | "hard"> = ref(("hard"))
-const levels = ["easy", "hard"]
+const levels = [{ name: "easy", disabled: false, label: "Easy" }, { name: "hard", disabled: false, label: "Unbeatable" }]
+
 const config: Ref<TheConfig> = ref({
     isXTurn: true,
     hasWonAll: '',
@@ -139,7 +140,8 @@ const setBackground = (matrix: ThreeTimesThreeMatrix, colorMatrix: string[][], c
 <template>
     <SelectButton v-model="isTwoplayer" :options="players" optionLabel="title" optionValue="value" aria-labelledby="basic"
         :allowEmpty="false" />
-    <SelectButton v-model="level" :options="levels" aria-labelledby="basic" :allowEmpty="false" />
+    <SelectButton v-if="!isTwoplayer" v-model="level" :options="levels" aria-labelledby="basic" :allowEmpty="false"
+        optionLabel="label" optionValue="name" />
 
     <h2 v-if="config.hasWonAll == 'X' || config.hasWonAll == 'O'">"{{ config.hasWonAll }}" won the game
     </h2>
