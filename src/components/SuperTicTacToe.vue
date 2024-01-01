@@ -115,6 +115,7 @@ const putASign = async (x: number, y: number, i: number, j: number) => {
 };
 
 const botMove = async (i: number, j: number) => {
+  // console.log("XXXXXXXXXXXXXXXX")
   const AIPLAYER = config.value.isXTurn ? 'X' : 'O'
   let [x2, y2, i2, j2] = [-1, -1, -1, -1]
   if (level.value === "easy") {
@@ -141,14 +142,14 @@ const botMove = async (i: number, j: number) => {
   updateConfig(x2, y2, i2, j2)
 }
 
-const getBestMove3x3 = (board: ThreeTimesThreeMatrix, AIPLAYER: CellValue): { bestMove: number[], bestScore: number } => {
+const getBestMove3x3 = (board: ThreeTimesThreeMatrix, AIPLAYER: CellValue, depth = 8): { bestMove: number[], bestScore: number } => {
   let bestMove = [-1, -1];
   let bestScore = -Infinity;
   const availableMoves = functions.getAvailableMoves(board)
   for (const move of availableMoves) {
     const newBoard = JSON.parse(JSON.stringify(board));
     newBoard[move[0]][move[1]] = AIPLAYER;
-    const score = functions.minimax(newBoard, 8, false, AIPLAYER)
+    const score = functions.minimax(newBoard, depth, false, AIPLAYER)
     if (score > bestScore) {
       bestScore = score;
       bestMove = move;
@@ -158,16 +159,22 @@ const getBestMove3x3 = (board: ThreeTimesThreeMatrix, AIPLAYER: CellValue): { be
 }
 
 
-const getBestMove3x3Plus = (board: ThreeTimesThreeMatrix, AIPLAYER: CellValue): { bestMove: number[], bestScore: number } => {
+const getBestMove3x3Plus = (board: ThreeTimesThreeMatrix, AIPLAYER: CellValue, depth = 8): { bestMove: number[], bestScore: number } => {
   let bestMove = [-1, -1];
   let bestScore = -Infinity;
   const availableMoves = functions.getAvailableMoves(board)
   for (const move of availableMoves) {
     const newBoard = JSON.parse(JSON.stringify(board));
-    const neewNextMoveBoard = JSON.parse(JSON.stringify(config.value.BigThreeTimesThree[move[0]][move[1]]));
+    const newNextMoveBoard = JSON.parse(JSON.stringify(config.value.BigThreeTimesThree[move[0]][move[1]]));
+    if (newBoard.every((value: CellValue, index: number) => value === newNextMoveBoard[index])) {
+      newNextMoveBoard[move[0]][move[1]] = AIPLAYER;
+    }
     newBoard[move[0]][move[1]] = AIPLAYER;
-    const nextOppenentMoveScore = getBestMove3x3(neewNextMoveBoard, AIPLAYER === 'X' ? 'O' : 'X').bestScore
-    const score = functions.minimax(newBoard, 8, false, AIPLAYER) - nextOppenentMoveScore
+    const nextOppenentMove = getBestMove3x3(newNextMoveBoard, AIPLAYER === 'X' ? 'O' : 'X', 1)
+    // console.log(JSON.stringify(move))
+    // console.log(JSON.stringify(newNextMoveBoard), JSON.stringify(nextOppenentMove.bestMove), nextOppenentMove.bestScore)
+    const score = functions.minimax(newBoard, depth, false, AIPLAYER) - nextOppenentMove.bestScore
+    // console.log(score)
     if (score > bestScore) {
       bestScore = score;
       bestMove = move;
@@ -205,7 +212,7 @@ const getRandomMove = (i: number, j: number): number[] => {
   return [x, y, ...availableMoves[randomIndex]];
 }
 
-const getAGoodtMove = (i: number, j: number, AIPLAYER: CellValue): number[] => {
+const getBestMove = (i: number, j: number, AIPLAYER: CellValue): number[] => {
   if (config.value.ThreeTimesThree[i][j] === '') {
     return [i, j, ...getBestMove3x3Plus(config.value.BigThreeTimesThree[i][j], AIPLAYER).bestMove]
   }
@@ -227,7 +234,7 @@ const getAGoodtMove = (i: number, j: number, AIPLAYER: CellValue): number[] => {
   }
 }
 
-const getBestMove = (i: number, j: number, AIPLAYER: CellValue): number[] => {
+const getAGoodtMove = (i: number, j: number, AIPLAYER: CellValue): number[] => {
   if (config.value.ThreeTimesThree[i][j] === '') {
     return [i, j, ...getBestMove3x3(config.value.BigThreeTimesThree[i][j], AIPLAYER).bestMove]
   }
