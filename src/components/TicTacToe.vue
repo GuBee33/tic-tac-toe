@@ -155,8 +155,11 @@ const setBackground = (matrix: ThreeTimesThreeMatrix, colorMatrix: string[][], c
     <table class="bigtable">
         <tr v-for="(row, i) in config.ThreeTimesThree" :key="i">
             <td class="cell" v-for="(cell, j) in row" :key="j">
-                <div :class="config.background[i][j] + ' mark'" @click="putASign(i, j)">{{ cell }}
-                </div>
+                <Button :class="config.background[i][j] + ' signbutton'" @click="putASign(i, j)"
+                    size="large">
+                    <i  v-if="cell == 'X'" class="pi pi-times "  style="font-size: 4rem;"></i>
+                    <i  v-else-if="cell == 'O'" class="pi pi-circle "  style="font-size: 4rem;"></i>
+                 </Button>
             </td>
         </tr>
     </table>
@@ -175,13 +178,17 @@ const setBackground = (matrix: ThreeTimesThreeMatrix, colorMatrix: string[][], c
     vertical-align: middle;
 }
 
-.mark {
+button .iconClass {
+    font-size: 3rem !important;
+}
+
+.signbutton {
+    color: azure;
     width: min(27vw, 27vh);
     height: min(27vw, 27vh);
-    color: azure;
-    align-content: center;
-    vertical-align: middle;
-    font-size: min(27vw, 27vh);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .black {

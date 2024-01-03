@@ -353,12 +353,11 @@ const setWinner = (matrix: ThreeTimesThreeMatrix, x: number, y: number) => {
         <table :class="markValidArea(x, y)">
           <tr v-for="(row, i) in bigcell" :key="i">
             <td class="cell" v-for="(cell, j) in row" :key="j">
-              <Button v-if="cell == 'X'" :class="config.background[x][y][i][j] + ' signbutton'"
-                @click="putASign(x, y, i, j)" icon="pi pi-times">
-              </Button><Button v-else-if="cell == 'O'" :class="config.background[x][y][i][j] + ' signbutton'"
-                @click="putASign(x, y, i, j)" icon="pi pi-circle">
-              </Button>
-              <Button v-else :class="config.background[x][y][i][j] + ' signbutton'" @click="putASign(x, y, i, j)">
+              <Button :class="config.background[x][y][i][j] + ' signbutton'" @click="putASign(x, y, i, j)">
+                <i v-if="cell == 'X'" class="pi pi-times "
+                  style="font-size: x-large"></i>
+                <i v-else-if="cell == 'O'" class="pi pi-circle "
+                  style="font-size:  x-large"></i>
               </Button>
             </td>
           </tr>
@@ -373,7 +372,7 @@ const setWinner = (matrix: ThreeTimesThreeMatrix, x: number, y: number) => {
   width: min(82vw, 82vh);
   height: min(82vw, 82vh);
   table-layout: fixed;
-  
+
   align-content: center;
   vertical-align: middle;
 }
@@ -396,14 +395,6 @@ const setWinner = (matrix: ThreeTimesThreeMatrix, x: number, y: number) => {
   background-color: gray;
 }
 
-.mark {
-  /* width: min(7vw, 7vh);
-  height: min(7vw, 7vh); */
-  /* color: azure;
-  align-content: center;
-  vertical-align: middle; */
-}
-
 .black {
   background-color: black;
 }
@@ -421,11 +412,11 @@ const setWinner = (matrix: ThreeTimesThreeMatrix, x: number, y: number) => {
 }
 
 .signbutton {
-  color:azure;
+  color: azure;
   width: min(7vw, 7vh);
   height: min(7vw, 7vh);
-  font-weight: bold !important;
-  font-size: x-large !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-
 </style>
