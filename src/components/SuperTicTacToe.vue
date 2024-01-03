@@ -18,14 +18,14 @@ interface TheConfig {
   background: string[][][][],
   lastClick: number[],
   winnerBackground: string[][]
-  // availableCells: number[][]
+  availableCells: number[][]
 }
 const isTwoplayer: Ref<boolean> = ref((false))
 const players = [
   { title: "Human vs Computer", value: false },
   { title: "Human vs Human", value: true },
 ]
-const level: Ref<"easy" | "medium" | "hard"> = ref(("easy"))
+const level: Ref<"easy" | "medium" | "hard"> = ref(("hard"))
 const levels = [{ name: "easy", disabled: false, label: "Easy" }, { name: "medium", disabled: false, label: "Medium" }, { name: "hard", disabled: false, label: "Hard" }]
 const config: Ref<TheConfig> = ref({
   isXTurn: true,
@@ -36,7 +36,7 @@ const config: Ref<TheConfig> = ref({
   BigThreeTimesThree: [],
   background: [],
   winnerBackground: [],
-  // availableCells: [],
+  availableCells: [],
 })
 const bigtableClass = ref({ "bigtable": true, "cursor-wait": false })
 const reset = () => {
@@ -48,7 +48,7 @@ const reset = () => {
   config.value.ThreeTimesThree = []
   config.value.winnerBackground = []
   config.value.hasWon = []
-  // config.value.availableCells = []
+  config.value.availableCells = []
 
   for (let x = 0; x < 3; x++) {
     let bigRow: ThreeTimesThreeMatrix[] = []
@@ -68,6 +68,7 @@ const reset = () => {
         for (let j = 0; j < 3; j++) {
           row.push("")
           rowbg.push("black")
+          config.value.availableCells.push([x, y, i, j])
         }
         smallMatrix.push(row)
         smallMatrixbg.push(rowbg)
@@ -81,13 +82,33 @@ const reset = () => {
     config.value.winnerBackground.push(winnerbg)
     config.value.hasWon.push(won)
   }
-
 }
 reset()
+
+const filterAvailable = (x: number, y: number, i = -1, j = -1, boards = false) => {
+  if (i !== -1 && j !== -1) {
+    return config.value.availableCells.filter((arr) => !(arr[0] === x && arr[1] === y && arr[2] === i && arr[3] === j));
+  }
+  else {
+    const filteredBoardCells = config.value.availableCells.filter((arr) => !(arr[0] === x && arr[1] === y))
+    if (boards) {
+      return filteredBoardCells.map((arr) => arr.slice(0, 2)).reduce((result: number[][], current: number[]) => {
+        if (!result.some((item) => item[0] === current[0] && item[1] === current[1])) {
+          result.push(current);
+        }
+        return result;
+      }, []);
+    }
+    else {
+      return filteredBoardCells
+    }
+  }
+}
 
 const updateConfig = (x: number, y: number, i: number, j: number): void => {
   const currentSign: CellValue = config.value.isXTurn ? 'X' : 'O';
   config.value.BigThreeTimesThree[x][y][i][j] = currentSign;
+  config.value.availableCells = filterAvailable(x, y, i, j)
   config.value.isXTurn = !config.value.isXTurn;
   config.value.lastClick = [i, j];
   setWinner(config.value.BigThreeTimesThree[x][y], x, y);
@@ -115,7 +136,6 @@ const putASign = async (x: number, y: number, i: number, j: number) => {
 };
 
 const botMove = async (i: number, j: number) => {
-  // console.log("XXXXXXXXXXXXXXXX")
   const AIPLAYER = config.value.isXTurn ? 'X' : 'O'
   let [x2, y2, i2, j2] = [-1, -1, -1, -1]
   if (level.value === "easy") {
@@ -163,18 +183,20 @@ const getBestMove3x3Plus = (board: ThreeTimesThreeMatrix, AIPLAYER: CellValue, d
   let bestMove = [-1, -1];
   let bestScore = -Infinity;
   const availableMoves = functions.getAvailableMoves(board)
+  const availableBoards = functions.getAvailableMoves(config.value.ThreeTimesThree)
   for (const move of availableMoves) {
     const newBoard = JSON.parse(JSON.stringify(board));
-    const newNextMoveBoard = JSON.parse(JSON.stringify(config.value.BigThreeTimesThree[move[0]][move[1]]));
-    if (newBoard.every((value: CellValue, index: number) => value === newNextMoveBoard[index])) {
-      newNextMoveBoard[move[0]][move[1]] = AIPLAYER;
+    let nextOppenentMoveScore = 9
+    if (availableBoards.some(availableMove => availableMove[0] === move[0] && availableMove[1] === move[1])) {
+
+      const newNextMoveBoard = JSON.parse(JSON.stringify(config.value.BigThreeTimesThree[move[0]][move[1]]));
+      if (newBoard.every((value: CellValue, index: number) => value === newNextMoveBoard[index])) {
+        newNextMoveBoard[move[0]][move[1]] = AIPLAYER;
+      }
+      newBoard[move[0]][move[1]] = AIPLAYER;
+      nextOppenentMoveScore = getBestMove3x3(newNextMoveBoard, AIPLAYER === 'X' ? 'O' : 'X', 1).bestScore
     }
-    newBoard[move[0]][move[1]] = AIPLAYER;
-    const nextOppenentMove = getBestMove3x3(newNextMoveBoard, AIPLAYER === 'X' ? 'O' : 'X', 1)
-    // console.log(JSON.stringify(move))
-    // console.log(JSON.stringify(newNextMoveBoard), JSON.stringify(nextOppenentMove.bestMove), nextOppenentMove.bestScore)
-    const score = functions.minimax(newBoard, depth, false, AIPLAYER) - nextOppenentMove.bestScore
-    // console.log(score)
+    const score = functions.minimax(newBoard, depth, false, AIPLAYER) - nextOppenentMoveScore
     if (score > bestScore) {
       bestScore = score;
       bestMove = move;
@@ -295,13 +317,13 @@ const setWinner = (matrix: ThreeTimesThreeMatrix, x: number, y: number) => {
     const color = config.value.ThreeTimesThree[x][y] === 'O' ? 'green' : 'red';
     setBackground(result, config.value.background[x][y], color)
     config.value.hasWon[x][y] = true;
-
+    config.value.availableCells = filterAvailable(x, y, -1, -1)
     const resutl2 = functions.checkGameStatus(config.value.ThreeTimesThree)
     if (resutl2.some(x => x.won)) {
       setBackground(resutl2, config.value.winnerBackground, color)
       config.value.hasWonAll = result.filter(x => x.won)[0].player
     }
-    else if (!config.value.BigThreeTimesThree.some(row => (row.some(col => functions.getAvailableMoves(col).length > 0)))) {
+    else if (config.value.availableCells.length == 0) {
       config.value.hasWonAll = "draw"
     }
   }
@@ -331,7 +353,13 @@ const setWinner = (matrix: ThreeTimesThreeMatrix, x: number, y: number) => {
         <table :class="markValidArea(x, y)">
           <tr v-for="(row, i) in bigcell" :key="i">
             <td class="cell" v-for="(cell, j) in row" :key="j">
-              <div :class="config.background[x][y][i][j] + ' mark'" @click="putASign(x, y, i, j)">{{ cell }}</div>
+              <Button v-if="cell == 'X'" :class="config.background[x][y][i][j] + ' signbutton'"
+                @click="putASign(x, y, i, j)" icon="pi pi-times">
+              </Button><Button v-else-if="cell == 'O'" :class="config.background[x][y][i][j] + ' signbutton'"
+                @click="putASign(x, y, i, j)" icon="pi pi-circle">
+              </Button>
+              <Button v-else :class="config.background[x][y][i][j] + ' signbutton'" @click="putASign(x, y, i, j)">
+              </Button>
             </td>
           </tr>
         </table>
@@ -345,6 +373,9 @@ const setWinner = (matrix: ThreeTimesThreeMatrix, x: number, y: number) => {
   width: min(82vw, 82vh);
   height: min(82vw, 82vh);
   table-layout: fixed;
+  
+  align-content: center;
+  vertical-align: middle;
 }
 
 .cell {
@@ -366,12 +397,11 @@ const setWinner = (matrix: ThreeTimesThreeMatrix, x: number, y: number) => {
 }
 
 .mark {
-  width: min(7vw, 7vh);
-  height: min(7vw, 7vh);
-  color: azure;
+  /* width: min(7vw, 7vh);
+  height: min(7vw, 7vh); */
+  /* color: azure;
   align-content: center;
-  vertical-align: middle;
-  font-size: min(7vw, 7vh);
+  vertical-align: middle; */
 }
 
 .black {
@@ -379,7 +409,7 @@ const setWinner = (matrix: ThreeTimesThreeMatrix, x: number, y: number) => {
 }
 
 .grey {
-  background-color: 2a323d;
+  background-color: #2a323d;
 }
 
 .green {
@@ -389,4 +419,13 @@ const setWinner = (matrix: ThreeTimesThreeMatrix, x: number, y: number) => {
 .red {
   background-color: red;
 }
+
+.signbutton {
+  color:azure;
+  width: min(7vw, 7vh);
+  height: min(7vw, 7vh);
+  font-weight: bold !important;
+  font-size: x-large !important;
+}
+
 </style>
