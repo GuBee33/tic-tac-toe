@@ -10,9 +10,12 @@ interface TheConfig {
     isXTurn: boolean,
     hasWonAll: CellValue | "draw",
     ThreeTimesThree: ThreeTimesThreeMatrix,
-    background: string[][],
+    background: backgroundClasses[][],
     availableCells: number[][],
 }
+type backgroundClasses = { "signbutton": boolean, "black": boolean, "grey": boolean, "green": boolean, "red": boolean, "flip-x": boolean }
+type BackgroundKeys = keyof backgroundClasses;
+
 const isTwoplayer: Ref<boolean> = ref((false))
 const players = [
     { title: "Human vs Computer", value: false },
@@ -38,10 +41,10 @@ const reset = () => {
     config.value.background = []
     for (let i = 0; i < 3; i++) {
         let empty: CellValue[] = []
-        let bg = []
+        let bg: backgroundClasses[] = []
         for (let j = 0; j < 3; j++) {
             empty.push("")
-            bg.push("black")
+            bg.push({ "signbutton": true, "black": true, "grey": false, "green": false, "red": false, "flip-x": false })
             config.value.availableCells.push([i, j])
         }
         config.value.ThreeTimesThree.push(empty)
@@ -55,6 +58,7 @@ const updateConfig = (i: number, j: number): void => {
     config.value.ThreeTimesThree[i][j] = currentSign;
     config.value.isXTurn = !config.value.isXTurn;
     config.value.availableCells = config.value.availableCells.filter(cell => !(cell[0] === i && cell[1] === j));
+    config.value.background[i][j]['flip-x'] = true
     checkWin(config.value.ThreeTimesThree, i, j);
 }
 
@@ -86,8 +90,7 @@ const getBestMove = (board: ThreeTimesThreeMatrix, AIPLAYER: CellValue): number[
         newBoard[move[0]][move[1]] = AIPLAYER;
         const score = functions.minimax(newBoard, 8, false, AIPLAYER) + (move[0] + move[1] === 2 ? (move[0] == 1 ? 3 : 2) : 0);
         if (score > bestScore) {
-            bestScore = score;
-            bestMove = move;
+            bestScore = score; bestMove = move;
         }
     }
     return bestMove;
@@ -113,22 +116,22 @@ const checkWin = (matrix: ThreeTimesThreeMatrix, x: number, y: number) => {
     setBackground(config.value.ThreeTimesThree, config.value.background, color)
 }
 
-const setBackground = (matrix: ThreeTimesThreeMatrix, colorMatrix: string[][], color: string) => {
+const setBackground = (matrix: ThreeTimesThreeMatrix, colorMatrix: backgroundClasses[][], color: BackgroundKeys) => {
     const [row, col, diag] = functions.checkGameStatus(matrix);
     if (row.won) {
         colorMatrix[row.index] = Array(3).fill(color);
     } else if (col.won) {
         for (let i = 0; i < matrix.length; i++) {
-            colorMatrix[i][col.index] = color;
+            colorMatrix[i][col.index][color] = true;
         }
     } else if (diag.won) {
         if (diag.index === 0) {
             for (let i = 0; i < matrix.length; i++) {
-                colorMatrix[i][i] = color;
+                colorMatrix[i][i][color] = true;
             }
         } else {
             for (let i = 0; i < matrix.length; i++) {
-                colorMatrix[i][matrix.length - 1 - i] = color;
+                colorMatrix[i][matrix.length - 1 - i][color] = true;
             }
         }
     }
@@ -155,11 +158,10 @@ const setBackground = (matrix: ThreeTimesThreeMatrix, colorMatrix: string[][], c
     <table class="bigtable">
         <tr v-for="(row, i) in config.ThreeTimesThree" :key="i">
             <td class="cell" v-for="(cell, j) in row" :key="j">
-                <Button :class="config.background[i][j] + ' signbutton'" @click="putASign(i, j)"
-                    size="large">
-                    <i  v-if="cell == 'X'" class="pi pi-times "  style="font-size: 4rem;"></i>
-                    <i  v-else-if="cell == 'O'" class="pi pi-circle "  style="font-size: 4rem;"></i>
-                 </Button>
+                <Button :class="config.background[i][j]" @click="putASign(i, j)" size="large">
+                    <i v-if="cell == 'X'" class="pi pi-times " style="font-size: 4rem;"></i>
+                    <i v-else-if="cell == 'O'" class="pi pi-circle " style="font-size: 4rem;"></i>
+                </Button>
             </td>
         </tr>
     </table>
@@ -186,9 +188,13 @@ button .iconClass {
     color: azure;
     width: min(27vw, 27vh);
     height: min(27vw, 27vh);
-    display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.flip-x {
+    transition: all ease-in-out .35s;
+    transform: rotateY(180deg);
 }
 
 .black {

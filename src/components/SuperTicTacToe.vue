@@ -8,6 +8,8 @@ import { TicTacToe, CellValue, ThreeTimesThreeMatrix, WinData } from '../utils/t
 const functions = new TicTacToe();
 
 type BigThreeTimesThreeMatrix = ThreeTimesThreeMatrix[][];
+type backgroundClasses = {"signbutton":boolean, "black":boolean, "grey":boolean, "green": boolean, "red":boolean, "flip-x":boolean}
+type BackgroundKeys = keyof backgroundClasses;
 
 interface TheConfig {
   isXTurn: boolean,
@@ -15,9 +17,9 @@ interface TheConfig {
   hasWonAll: CellValue | "draw",
   ThreeTimesThree: ThreeTimesThreeMatrix,
   BigThreeTimesThree: BigThreeTimesThreeMatrix,
-  background: string[][][][],
+  background: backgroundClasses[][][][],
   lastClick: number[],
-  winnerBackground: string[][]
+  winnerBackground: backgroundClasses[][]
   availableCells: number[][]
 }
 const isTwoplayer: Ref<boolean> = ref((false))
@@ -52,22 +54,22 @@ const reset = () => {
 
   for (let x = 0; x < 3; x++) {
     let bigRow: ThreeTimesThreeMatrix[] = []
-    let bigRowbg = []
+    let bigRowbg: backgroundClasses[][][] = []
     let row2: CellValue[] = []
-    let winnerbg = []
+    let winnerbg: backgroundClasses[] = []
     let won = []
     for (let y = 0; y < 3; y++) {
       let smallMatrix: ThreeTimesThreeMatrix = []
-      let smallMatrixbg = []
+      let smallMatrixbg:backgroundClasses[][] = []
       row2.push("")
-      winnerbg.push("grey")
+      winnerbg.push({"signbutton":true, "black":false, "grey":true, "green": false, "red":false, "flip-x":false})
       won.push(false)
       for (let i = 0; i < 3; i++) {
         let row: CellValue[] = []
-        let rowbg = []
+        let rowbg:backgroundClasses[] = []
         for (let j = 0; j < 3; j++) {
           row.push("")
-          rowbg.push("black")
+          rowbg.push({"signbutton":true, "black":true, "grey":false, "green": false, "red":false, "flip-x":false})
           config.value.availableCells.push([x, y, i, j])
         }
         smallMatrix.push(row)
@@ -111,6 +113,7 @@ const updateConfig = (x: number, y: number, i: number, j: number): void => {
   config.value.availableCells = filterAvailable(x, y, i, j)
   config.value.isXTurn = !config.value.isXTurn;
   config.value.lastClick = [i, j];
+  config.value.background[x][y][i][j]['flip-x']=true
   setWinner(config.value.BigThreeTimesThree[x][y], x, y);
 }
 
@@ -294,17 +297,17 @@ const markValidArea = (x: number, y: number) => {
     }
   }
 }
-const setBackground = (result: [WinData, WinData, WinData], colorMatrix: string[][], color: string) => {
+const setBackground = (result: [WinData, WinData, WinData], colorMatrix: backgroundClasses[][], color:BackgroundKeys) => {
   for (let i = 0; i < 3; i++) {
     if (result[0].won) {
-      colorMatrix[result[0].index][i] = color;
+      colorMatrix[result[0].index][i][color] = true;
     } else if (result[1].won) {
-      colorMatrix[i][result[1].index] = color;
+      colorMatrix[i][result[1].index][color] = true;
     } else if (result[2].won) {
       if (result[2].index === 0) {
-        colorMatrix[i][i] = color;
+        colorMatrix[i][i][color] = true;
       } else {
-        colorMatrix[i][2 - i] = color;
+        colorMatrix[i][2 - i][color] = true;
       }
     }
   }
@@ -353,7 +356,7 @@ const setWinner = (matrix: ThreeTimesThreeMatrix, x: number, y: number) => {
         <table :class="markValidArea(x, y)">
           <tr v-for="(row, i) in bigcell" :key="i">
             <td class="cell" v-for="(cell, j) in row" :key="j">
-              <Button :class="config.background[x][y][i][j] + ' signbutton'" @click="putASign(x, y, i, j)">
+              <Button :class="config.background[x][y][i][j]" @click="putASign(x, y, i, j)">
                 <i v-if="cell == 'X'" class="pi pi-times "
                   style="font-size: x-large"></i>
                 <i v-else-if="cell == 'O'" class="pi pi-circle "
@@ -371,8 +374,7 @@ const setWinner = (matrix: ThreeTimesThreeMatrix, x: number, y: number) => {
 .bigtable {
   width: min(82vw, 82vh);
   height: min(82vw, 82vh);
-  table-layout: fixed;
-
+  /* table-layout: fixed; */
   align-content: center;
   vertical-align: middle;
 }
@@ -415,8 +417,12 @@ const setWinner = (matrix: ThreeTimesThreeMatrix, x: number, y: number) => {
   color: azure;
   width: min(7vw, 7vh);
   height: min(7vw, 7vh);
-  display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.flip-x {
+    transition: all ease-in-out .35s;
+    transform: rotateY(180deg);
 }
 </style>
