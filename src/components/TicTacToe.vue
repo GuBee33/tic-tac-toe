@@ -13,7 +13,7 @@ interface TheConfig {
     background: backgroundClasses[][],
     availableCells: number[][],
 }
-type backgroundClasses = { "signbutton": boolean, "black": boolean, "grey": boolean, "green": boolean, "red": boolean, "flip-x": boolean }
+type backgroundClasses = { "shadow-6": boolean, "spot": boolean, "black": boolean, "gray": boolean, "green": boolean, "red": boolean, "flip-x": boolean }
 type BackgroundKeys = keyof backgroundClasses;
 
 const isTwoplayer: Ref<boolean> = ref((false))
@@ -44,7 +44,7 @@ const reset = () => {
         let bg: backgroundClasses[] = []
         for (let j = 0; j < 3; j++) {
             empty.push("")
-            bg.push({ "signbutton": true, "black": true, "grey": false, "green": false, "red": false, "flip-x": false })
+            bg.push({ "shadow-6": true, "spot": true, "black": true, "gray": false, "green": false, "red": false, "flip-x": false })
             config.value.availableCells.push([i, j])
         }
         config.value.ThreeTimesThree.push(empty)
@@ -118,19 +118,16 @@ const checkWin = (matrix: ThreeTimesThreeMatrix, x: number, y: number) => {
 
 const setBackground = (matrix: ThreeTimesThreeMatrix, colorMatrix: backgroundClasses[][], color: BackgroundKeys) => {
     const [row, col, diag] = functions.checkGameStatus(matrix);
-    if (row.won) {
-        colorMatrix[row.index] = Array(3).fill(color);
-    } else if (col.won) {
-        for (let i = 0; i < matrix.length; i++) {
+    for (let i = 0; i < matrix.length; i++) {
+        if (row.won) {
+            colorMatrix[row.index][i][color] = true
+        } else if (col.won) {
             colorMatrix[i][col.index][color] = true;
-        }
-    } else if (diag.won) {
-        if (diag.index === 0) {
-            for (let i = 0; i < matrix.length; i++) {
+        } else if (diag.won) {
+            if (diag.index === 0) {
                 colorMatrix[i][i][color] = true;
             }
-        } else {
-            for (let i = 0; i < matrix.length; i++) {
+            else {
                 colorMatrix[i][matrix.length - 1 - i][color] = true;
             }
         }
@@ -155,57 +152,32 @@ const setBackground = (matrix: ThreeTimesThreeMatrix, colorMatrix: backgroundCla
     <div v-else>
         It's "{{ config.isXTurn ? "X" : "O" }}"'s turn
     </div>
-    <table class="bigtable">
-        <tr v-for="(row, i) in config.ThreeTimesThree" :key="i">
-            <td class="cell" v-for="(cell, j) in row" :key="j">
-                <Button :class="config.background[i][j]" @click="putASign(i, j)" size="large">
-                    <i v-if="cell == 'X'" class="pi pi-times " style="font-size: 4rem;"></i>
-                    <i v-else-if="cell == 'O'" class="pi pi-circle " style="font-size: 4rem;"></i>
-                </Button>
-            </td>
-        </tr>
-    </table>
+    <div class="container">
+        <ul class="flex spot-row" v-for="(row, i) in config.ThreeTimesThree" :key="i">
+            <li :class="config.background[i][j]" v-for="(cell, j) in row" :key="j" @click="putASign(i, j)">
+                {{ cell }}
+            </li>
+        </ul>
+    </div>
 </template>
 
-<style scoped>
-.bigtable {
+<style >
+
+.container {
     width: min(82vw, 82vh);
     height: min(81vw, 81vh);
-    border-collapse: collapse;
-    table-layout: fixed;
+    margin: 0 auto;
 }
 
-.cell {
-    text-align: center;
-    vertical-align: middle;
-}
-
-button .iconClass {
-    font-size: 3rem !important;
-}
-
-.signbutton {
-    color: azure;
-    width: min(27vw, 27vh);
-    height: min(27vw, 27vh);
+.spot {
+    display: flex;
     align-items: center;
     justify-content: center;
+    width: min(27vw, 27vh);
+    height: min(27vw, 27vh);
+    margin: 5px;
+    font-size: min(20vw, 20vh);
 }
 
-.flip-x {
-    transition: all ease-in-out .35s;
-    transform: rotateY(180deg);
-}
 
-.black {
-    background-color: black;
-}
-
-.green {
-    background-color: green;
-}
-
-.red {
-    background-color: red;
-}
 </style>

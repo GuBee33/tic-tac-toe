@@ -8,7 +8,7 @@ import { TicTacToe, CellValue, ThreeTimesThreeMatrix, WinData } from '../utils/t
 const functions = new TicTacToe();
 
 type BigThreeTimesThreeMatrix = ThreeTimesThreeMatrix[][];
-type backgroundClasses = {"signbutton":boolean, "black":boolean, "grey":boolean, "green": boolean, "red":boolean, "flip-x":boolean}
+type backgroundClasses = { "shadow-6"?: boolean, "spot"?: boolean, "black"?: boolean, "gray": boolean, "green": boolean, "red": boolean, "available"?: boolean, "flip-x"?: boolean }
 type BackgroundKeys = keyof backgroundClasses;
 
 interface TheConfig {
@@ -40,7 +40,6 @@ const config: Ref<TheConfig> = ref({
   winnerBackground: [],
   availableCells: [],
 })
-const bigtableClass = ref({ "bigtable": true, "cursor-wait": false })
 const reset = () => {
   config.value.isXTurn = true
   config.value.hasWonAll = ""
@@ -60,16 +59,16 @@ const reset = () => {
     let won = []
     for (let y = 0; y < 3; y++) {
       let smallMatrix: ThreeTimesThreeMatrix = []
-      let smallMatrixbg:backgroundClasses[][] = []
+      let smallMatrixbg: backgroundClasses[][] = []
       row2.push("")
-      winnerbg.push({"signbutton":true, "black":false, "grey":true, "green": false, "red":false, "flip-x":false})
+      winnerbg.push({ "gray": true, "green": false, "red": false, "available": true })
       won.push(false)
       for (let i = 0; i < 3; i++) {
         let row: CellValue[] = []
-        let rowbg:backgroundClasses[] = []
+        let rowbg: backgroundClasses[] = []
         for (let j = 0; j < 3; j++) {
           row.push("")
-          rowbg.push({"signbutton":true, "black":true, "grey":false, "green": false, "red":false, "flip-x":false})
+          rowbg.push({ "shadow-6": true, "spot": true, "black": true, "gray": false, "green": false, "red": false, "flip-x": false })
           config.value.availableCells.push([x, y, i, j])
         }
         smallMatrix.push(row)
@@ -83,6 +82,7 @@ const reset = () => {
     config.value.ThreeTimesThree.push(row2)
     config.value.winnerBackground.push(winnerbg)
     config.value.hasWon.push(won)
+
   }
 }
 reset()
@@ -113,8 +113,9 @@ const updateConfig = (x: number, y: number, i: number, j: number): void => {
   config.value.availableCells = filterAvailable(x, y, i, j)
   config.value.isXTurn = !config.value.isXTurn;
   config.value.lastClick = [i, j];
-  config.value.background[x][y][i][j]['flip-x']=true
+  config.value.background[x][y][i][j]['flip-x'] = true
   setWinner(config.value.BigThreeTimesThree[x][y], x, y);
+  markValidArea()
 }
 
 const putASign = async (x: number, y: number, i: number, j: number) => {
@@ -131,9 +132,7 @@ const putASign = async (x: number, y: number, i: number, j: number) => {
   if (canPlaceSign) {
     updateConfig(x, y, i, j)
     if (!isTwoplayer.value && config.value.hasWonAll === '') {
-      bigtableClass.value = { "bigtable": true, "cursor-wait": true }
       await botMove(i, j)
-      bigtableClass.value = { "bigtable": true, "cursor-wait": false }
     }
   }
 };
@@ -281,23 +280,32 @@ const getAGoodtMove = (i: number, j: number, AIPLAYER: CellValue): number[] => {
   }
 }
 
-const markValidArea = (x: number, y: number) => {
-  if (config.value.hasWonAll) {
-    return 'gray'
-  }
-  else {
-    if (!config.value.hasWon[x][y] && ((config.value.lastClick[0] === x && config.value.lastClick[1] === y) ||
-      (config.value.lastClick[0] === -1 && config.value.lastClick[1] === -1) ||
-      config.value.hasWon[config.value.lastClick[0]][config.value.lastClick[1]] ||
-      !config.value.BigThreeTimesThree[config.value.lastClick[0]][config.value.lastClick[1]].flat().flat().some(val => val === ''))) {
-      return "available"
-    }
-    else {
-      return "blocked"
+const markValidArea = () => {
+  for (let x = 0; x < 3; x++) {
+    for (let y = 0; y < 3; y++) {
+      if (config.value.hasWonAll) {
+        config.value.winnerBackground[x][y]["black"] = true
+        config.value.winnerBackground[x][y]["available"] = false
+        config.value.winnerBackground[x][y]["gray"] = false
+      }
+      else {
+        if (!config.value.hasWon[x][y] && ((config.value.lastClick[0] === x && config.value.lastClick[1] === y) ||
+          (config.value.lastClick[0] === -1 && config.value.lastClick[1] === -1) ||
+          config.value.hasWon[config.value.lastClick[0]][config.value.lastClick[1]] ||
+          !config.value.BigThreeTimesThree[config.value.lastClick[0]][config.value.lastClick[1]].flat().flat().some(val => val === ''))) {
+          config.value.winnerBackground[x][y]["black"] = false
+          config.value.winnerBackground[x][y]["available"] = true
+          config.value.winnerBackground[x][y]["gray"] = false
+        } else {
+          config.value.winnerBackground[x][y]["black"] = false
+          config.value.winnerBackground[x][y]["available"] = false
+          config.value.winnerBackground[x][y]["gray"] = true
+        }
+      }
     }
   }
 }
-const setBackground = (result: [WinData, WinData, WinData], colorMatrix: backgroundClasses[][], color:BackgroundKeys) => {
+const setBackground = (result: [WinData, WinData, WinData], colorMatrix: backgroundClasses[][], color: BackgroundKeys) => {
   for (let i = 0; i < 3; i++) {
     if (result[0].won) {
       colorMatrix[result[0].index][i][color] = true;
@@ -336,93 +344,60 @@ const setWinner = (matrix: ThreeTimesThreeMatrix, x: number, y: number) => {
 </script>
 
 <template>
-  <SelectButton v-model="isTwoplayer" :options="players" optionLabel="title" optionValue="value" aria-labelledby="basic"
-    :allowEmpty="false" />
-  <SelectButton v-if="!isTwoplayer" v-model="level" :options="levels" aria-labelledby="basic" optionLabel="label"
-    optionValue="name" optionDisabled="disabled" :allowEmpty="false" />
+  <div>
+    <SelectButton v-model="isTwoplayer" :options="players" optionLabel="title" optionValue="value" aria-labelledby="basic"
+      :allowEmpty="false" />
+    <SelectButton v-if="!isTwoplayer" v-model="level" :options="levels" aria-labelledby="basic" optionLabel="label"
+      optionValue="name" optionDisabled="disabled" :allowEmpty="false" />
 
-  <h2 v-if="config.hasWonAll == 'X' || config.hasWonAll == 'O'">"{{ config.hasWonAll }}" won the game
-  </h2>
-  <h2 v-else-if="config.hasWonAll == 'draw'">
-    It's a draw
-  </h2>
-  <Button v-if="config.hasWonAll !== ''" @click="reset">Restart</Button>
-  <div v-else>
-    It's "{{ config.isXTurn ? "X" : "O" }}"'s turn
+    <h2 v-if="config.hasWonAll == 'X' || config.hasWonAll == 'O'">"{{ config.hasWonAll }}" won the game
+    </h2>
+    <h2 v-else-if="config.hasWonAll == 'draw'">
+      It's a draw
+    </h2>
+    <Button v-if="config.hasWonAll !== ''" @click="reset">Restart</Button>
+    <div v-else>
+      It's "{{ config.isXTurn ? "X" : "O" }}"'s turn
+    </div>
+    <div class="bigtable">
+      <ul v-for="(bigrow, x) in config.BigThreeTimesThree" :key="x" class="flex spot-row">
+        <div v-for="(bigcell, y) in bigrow" :key="y" :class="config.winnerBackground[x][y]">
+          <div class="container shadow-8">
+            <ul v-for="(row, i) in bigcell" :key="i" class="flex spot-row">
+              <li :class="config.background[x][y][i][j]" v-for="(cell, j) in row" :key="j" @click="putASign(x, y, i, j)">
+                {{ cell }}
+              </li>
+            </ul>
+
+          </div>
+        </div>
+      </ul>
+    </div>
   </div>
-  <table :class="bigtableClass">
-    <tr v-for="(bigrow, x) in config.BigThreeTimesThree" :key="x">
-      <td v-for="(bigcell, y) in bigrow" :key="y" :class="config.winnerBackground[x][y]">
-        <table :class="markValidArea(x, y)">
-          <tr v-for="(row, i) in bigcell" :key="i">
-            <td class="cell" v-for="(cell, j) in row" :key="j">
-              <Button :class="config.background[x][y][i][j]" @click="putASign(x, y, i, j)">
-                <i v-if="cell == 'X'" class="pi pi-times "
-                  style="font-size: x-large"></i>
-                <i v-else-if="cell == 'O'" class="pi pi-circle "
-                  style="font-size:  x-large"></i>
-              </Button>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
 </template>
 
 <style scoped>
 .bigtable {
   width: min(82vw, 82vh);
   height: min(82vw, 82vh);
-  /* table-layout: fixed; */
-  align-content: center;
-  vertical-align: middle;
+  margin: 0 auto;
 }
 
-.cell {
-  text-align: center;
-  vertical-align: middle;
+.container {
+  width: min(28vw, 28vh);
+  height: min(28vw, 28vh);
+  margin: 2px;
 }
 
-.available {
-  width: min(24vw, 24vh);
-  height: min(24vw, 24vh);
-  border: solid;
-  border-color: aquamarine;
-}
-
-.blocked {
-  width: min(24vw, 24vh);
-  height: min(24vw, 24vh);
-  background-color: gray;
-}
-
-.black {
-  background-color: black;
-}
-
-.grey {
-  background-color: #2a323d;
-}
-
-.green {
-  background-color: green;
-}
-
-.red {
-  background-color: red;
-}
-
-.signbutton {
-  color: azure;
-  width: min(7vw, 7vh);
-  height: min(7vw, 7vh);
+.spot {
+  display: flex;
   align-items: center;
   justify-content: center;
+  width: min(8vw, 8vh);
+  height: min(8vw, 8vh);
+  margin: 2px auto;
+  font-size: min(6vw, 6vh);
 }
 
-.flip-x {
-    transition: all ease-in-out .35s;
-    transform: rotateY(180deg);
-}
+
 </style>
